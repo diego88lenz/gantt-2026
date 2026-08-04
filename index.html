@@ -55,7 +55,19 @@
             </div>
         </header>
 
+        <nav class="tab-nav" role="tablist" aria-label="Navegação principal">
+            <button class="tab-link active" id="tabGantt" role="tab" aria-selected="true" aria-controls="tabGanttPanel">
+                <i data-lucide="gantt-chart-square" aria-hidden="true"></i>
+                <span>Roadmap</span>
+            </button>
+            <button class="tab-link" id="tabProjects" role="tab" aria-selected="false" aria-controls="tabProjectsPanel">
+                <i data-lucide="folder-kanban" aria-hidden="true"></i>
+                <span>Projetos</span>
+            </button>
+        </nav>
+
         <main id="mainContent">
+          <div id="tabGanttPanel" role="tabpanel" aria-labelledby="tabGantt">
             <section class="hero" aria-labelledby="pageTitle">
                 <div class="hero-copy">
                     <div class="eyebrow"><span></span> Planejamento e gestão</div>
@@ -279,6 +291,56 @@
                     <div class="bar-chart-container" id="barChartContainer"></div>
                 </div>
             </section>
+          </div><!-- /tabGanttPanel -->
+
+          <div id="tabProjectsPanel" role="tabpanel" aria-labelledby="tabProjects" hidden>
+            <section class="projects-section">
+                <div class="projects-header">
+                    <div>
+                        <span class="section-kicker">Cadastro de Projetos</span>
+                        <h2>Projetos de Dados, IA e Geoprocessamento</h2>
+                    </div>
+                    <button class="btn btn-primary" id="newProjectBtn" type="button">
+                        <i data-lucide="plus" aria-hidden="true"></i> Novo Projeto
+                    </button>
+                </div>
+
+                <div class="projects-stats" id="projectsStats">
+                    <article class="dash-card"><span class="dash-icon"><i data-lucide="folder" aria-hidden="true"></i></span><span class="dash-value" id="pStatTotal">0</span><span class="dash-label">Total</span></article>
+                    <article class="dash-card"><span class="dash-icon"><i data-lucide="loader-circle" aria-hidden="true"></i></span><span class="dash-value" id="pStatProgress">0</span><span class="dash-label">Em Andamento</span></article>
+                    <article class="dash-card"><span class="dash-icon"><i data-lucide="circle-check-big" aria-hidden="true"></i></span><span class="dash-value" id="pStatCompleted">0</span><span class="dash-label">Concluídos</span></article>
+                    <article class="dash-card"><span class="dash-icon"><i data-lucide="circle-dashed" aria-hidden="true"></i></span><span class="dash-value" id="pStatPlanning">0</span><span class="dash-label">Planejando</span></article>
+                    <article class="dash-card dash-card-featured"><span class="dash-icon"><i data-lucide="gauge" aria-hidden="true"></i></span><span class="dash-value" id="pStatAI">0</span><span class="dash-label">Projetos de IA</span></article>
+                </div>
+
+                <div class="projects-filters">
+                    <select id="projFilterType" class="select-control"><option value="">Todos os tipos</option><option value="data">Dados</option><option value="ai">IA</option><option value="geo">Geo</option><option value="analytics">Analytics</option></select>
+                    <select id="projFilterStatus" class="select-control"><option value="">Todos os status</option><option value="planning">Planejando</option><option value="in_progress">Em andamento</option><option value="completed">Concluído</option><option value="on_hold">Pausado</option><option value="cancelled">Cancelado</option></select>
+                    <select id="projFilterPriority" class="select-control"><option value="">Todas as prioridades</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select>
+                    <input type="search" id="projSearch" class="select-control" placeholder="Buscar projeto..." autocomplete="off">
+                </div>
+
+                <div class="projects-table-wrap">
+                    <table class="projects-table" id="projectsTable">
+                        <thead>
+                            <tr>
+                                <th>Projeto</th>
+                                <th>Tipo</th>
+                                <th>Departamento</th>
+                                <th>Empresa</th>
+                                <th>Responsável</th>
+                                <th>Solicitante</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                                <th>Início</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsBody"></tbody>
+                    </table>
+                </div>
+            </section>
+          </div><!-- /tabProjectsPanel -->
         </main>
 
         <footer class="app-footer">
@@ -411,10 +473,115 @@
         </div>
     </div>
 
+    <!-- Modal de Projeto -->
+    <div class="modal" id="projectModal" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle" aria-hidden="true">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <div>
+                    <span class="section-kicker">Cadastro de Projeto</span>
+                    <h2 id="projectModalTitle">Novo Projeto</h2>
+                </div>
+                <button class="icon-btn modal-close" id="projectModalClose" type="button" aria-label="Fechar">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </div>
+            <form id="projectForm">
+                <div class="form-grid">
+                    <div class="form-group form-group-full">
+                        <label for="projName">Nome do projeto <span aria-hidden="true">*</span></label>
+                        <input type="text" id="projName" required placeholder="Ex.: Dashboard de vendas Q1">
+                    </div>
+                    <div class="form-group form-group-full">
+                        <label for="projDescription">Descrição</label>
+                        <textarea id="projDescription" rows="3" placeholder="Detalhes do projeto, objetivos, escopo..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="projType">Tipo <span aria-hidden="true">*</span></label>
+                        <select id="projType" required>
+                            <option value="data">📊 Dados</option>
+                            <option value="ai">🤖 IA</option>
+                            <option value="geo">🗺️ Geoprocessamento</option>
+                            <option value="analytics">📈 Analytics</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="projPriority">Prioridade</label>
+                        <select id="projPriority">
+                            <option value="critical">🔴 Crítica</option>
+                            <option value="high">🟠 Alta</option>
+                            <option value="medium" selected>🟡 Média</option>
+                            <option value="low">🟢 Baixa</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="projDepartment">Departamento</label>
+                        <input type="text" id="projDepartment" placeholder="Ex.: Comercial" list="deptList">
+                        <datalist id="deptList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="projCompany">Empresa</label>
+                        <input type="text" id="projCompany" placeholder="Ex.: H2O Innovation" list="companyList">
+                        <datalist id="companyList"></datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="projAssignee">Responsável</label>
+                        <input type="text" id="projAssignee" placeholder="Nome do responsável">
+                    </div>
+                    <div class="form-group">
+                        <label for="projRequester">Solicitante</label>
+                        <input type="text" id="projRequester" placeholder="Quem solicitou o projeto">
+                    </div>
+                    <div class="form-group">
+                        <label for="projStatus">Status</label>
+                        <select id="projStatus">
+                            <option value="planning">Planejando</option>
+                            <option value="in_progress">Em andamento</option>
+                            <option value="completed">Concluído</option>
+                            <option value="on_hold">Pausado</option>
+                            <option value="cancelled">Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="projStartDate">Data de início</label>
+                        <input type="date" id="projStartDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="projEndDate">Data de fim</label>
+                        <input type="date" id="projEndDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="projBudget">Orçamento (R$)</label>
+                        <input type="number" id="projBudget" min="0" step="0.01" placeholder="0,00">
+                    </div>
+                    <div class="form-group">
+                        <label for="projTags">Tags</label>
+                        <input type="text" id="projTags" placeholder="urgente, Q1, LGPD (separadas por vírgula)">
+                    </div>
+                    <div class="form-group form-group-full" id="projDatesInfo" style="display:none;">
+                        <div class="proj-meta-grid">
+                            <div><small>Criado em:</small> <strong id="projCreated"></strong></div>
+                            <div><small>Atualizado em:</small> <strong id="projUpdated"></strong></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-danger" id="deleteProjectBtn" style="display:none;">
+                        <i data-lucide="trash-2" aria-hidden="true"></i> Excluir
+                    </button>
+                    <div class="modal-actions-main">
+                        <button type="button" class="btn btn-ghost" id="projectCancelBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="api.js?v=20260804-db"></script>
-    <script src="app.js?v=20260804-db"></script>
+    <script src="api.js?v=20260804-projects"></script>
+    <script src="projects.js?v=20260804-projects"></script>
+    <script src="app.js?v=20260804-projects"></script>
     <script>lucide.createIcons();</script>
 </body>
 

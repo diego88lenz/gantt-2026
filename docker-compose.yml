@@ -13,6 +13,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./database/projects.sql:/docker-entrypoint-initdb.d/03-projects.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U gantt -d gantt_2026"]
       interval: 5s

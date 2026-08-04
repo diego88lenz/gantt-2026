@@ -7,7 +7,7 @@ RUN npm install --production
 
 COPY server/ ./
 COPY database/ ../database/
-COPY app.js api.js index.html styles.css h2o-dark.png h2o-white.png ../
+COPY app.js api.js projects.js index.html styles.css h2o-dark.png h2o-white.png ../
 
 EXPOSE 3001
 

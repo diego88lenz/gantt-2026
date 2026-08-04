@@ -355,6 +355,129 @@ app.post('/api/migrate', async (req, res) => {
 });
 
 // =============================================================================
+// Projects — CRUD
+// =============================================================================
+app.get('/api/projects', async (req, res) => {
+    const { type, department, company, status, priority, assignee, search } = req.query;
+    const conditions = [];
+    const params = [];
+    let idx = 1;
+
+    if (type) { conditions.push(`type = $${idx++}`); params.push(type); }
+    if (department) { conditions.push(`department = $${idx++}`); params.push(department); }
+    if (company) { conditions.push(`company = $${idx++}`); params.push(company); }
+    if (status) { conditions.push(`status = $${idx++}`); params.push(status); }
+    if (priority) { conditions.push(`priority = $${idx++}`); params.push(priority); }
+    if (assignee) { conditions.push(`assignee ILIKE $${idx++}`); params.push(`%${assignee}%`); }
+    if (search) { conditions.push(`(name ILIKE $${idx} OR description ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    try {
+        const result = await pool.query(
+            `SELECT * FROM projects ${where} ORDER BY priority DESC, created_at DESC`,
+            params
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/projects/stats', async (_req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                COUNT(*) AS total,
+                COUNT(*) FILTER (WHERE status = 'planning') AS planning,
+                COUNT(*) FILTER (WHERE status = 'in_progress') AS in_progress,
+                COUNT(*) FILTER (WHERE status = 'completed') AS completed,
+                COUNT(*) FILTER (WHERE status = 'on_hold') AS on_hold,
+                COUNT(*) FILTER (WHERE status = 'cancelled') AS cancelled,
+                COUNT(*) FILTER (WHERE type = 'data') AS data,
+                COUNT(*) FILTER (WHERE type = 'ai') AS ai,
+                COUNT(*) FILTER (WHERE type = 'geo') AS geo,
+                COUNT(*) FILTER (WHERE type = 'analytics') AS analytics
+            FROM projects
+        `);
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/projects/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await pool.query('SELECT * FROM projects WHERE id = $1', [id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Projeto não encontrado' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/projects', async (req, res) => {
+    const { name, description, type, department, company, assignee, requester,
+            status, priority, start_date, end_date, budget, tags } = req.body;
+    try {
+        const result = await pool.query(
+            `INSERT INTO projects
+                (name, description, type, department, company, assignee, requester,
+                 status, priority, start_date, end_date, budget, tags)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+             RETURNING *`,
+            [name, description || null, type || 'data', department || null, company || null,
+             assignee || null, requester || null, status || 'planning', priority || 'medium',
+             start_date || null, end_date || null, budget || null, tags || null]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.put('/api/projects/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, description, type, department, company, assignee, requester,
+            status, priority, start_date, end_date, budget, tags } = req.body;
+    try {
+        const result = await pool.query(
+            `UPDATE projects SET
+                name = COALESCE($1, name),
+                description = COALESCE($2, description),
+                type = COALESCE($3, type),
+                department = COALESCE($4, department),
+                company = COALESCE($5, company),
+                assignee = COALESCE($6, assignee),
+                requester = COALESCE($7, requester),
+                status = COALESCE($8, status),
+                priority = COALESCE($9, priority),
+                start_date = COALESCE($10, start_date),
+                end_date = COALESCE($11, end_date),
+                budget = COALESCE($12, budget),
+                tags = COALESCE($13, tags)
+             WHERE id = $14 RETURNING *`,
+            [name, description, type, department, company, assignee, requester,
+             status, priority, start_date, end_date, budget, tags, id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Projeto não encontrado' });
+        res.json(result.rows[0]);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+app.delete('/api/projects/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+        res.json({ message: 'Projeto excluído' });
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// =============================================================================
 // Serve frontend
 // =============================================================================
 app.get('*', (req, res) => {

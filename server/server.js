@@ -358,6 +358,9 @@ app.post('/api/migrate', async (req, res) => {
 // Serve frontend
 // =============================================================================
 app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'Endpoint não encontrado' });
+    }
     const indexPath = path.join(__dirname, '..', 'index.html');
     if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);

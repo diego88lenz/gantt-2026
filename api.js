@@ -4,9 +4,7 @@
  * e sincroniza com PostgreSQL via REST. Se offline, usa localStorage.
  */
 const GanttAPI = (() => {
-    const BASE_URL = window.location.origin.includes('localhost')
-        ? 'http://localhost:3001'
-        : '';
+    const BASE_URL = '';
     const API_PREFIX = '/api';
     let online = false;
     let checking = false;

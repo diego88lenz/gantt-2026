@@ -7,7 +7,7 @@ RUN npm install --production
 
 COPY server/ ./
 COPY database/ ../database/
-COPY app.js index.html styles.css ../
+COPY app.js api.js index.html styles.css ../
 
 EXPOSE 3001
 

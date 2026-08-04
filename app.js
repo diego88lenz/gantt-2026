@@ -5,9 +5,9 @@ let currentYear = new Date().getFullYear().toString();
 
 // Category Configuration
 let categories = [
-    { id: 'projects', name: 'Geral', color: '#60a5fa' },
-    { id: 'data', name: 'Dados', color: '#fbbf24' },
-    { id: 'lake', name: 'Lakehouse', color: '#10b981' }
+    { id: 'projects', name: 'Geral', color: '#00f1fe' },
+    { id: 'data', name: 'Dados', color: '#00e0fe' },
+    { id: 'lake', name: 'Lakehouse', color: '#0580d3' }
 ];
 
 let currentEditingIndex = null;
@@ -18,6 +18,7 @@ let currentEditingCategoryId = null;
 let undoStack = [];
 let redoStack = [];
 const MAX_HISTORY = 50;
+let historyBaseline = null;
 
 // Collapsed Categories
 let collapsedCategories = new Set();
@@ -35,6 +36,9 @@ let zoomLevel = 12;
 // Drag State
 let dragState = { category: null, index: null, element: null };
 
+// Dialog focus management
+let lastFocusedElement = null;
+
 // Theme
 let isLightTheme = localStorage.getItem('gantt-theme') === 'light';
 
@@ -42,6 +46,21 @@ const MONTH_NAMES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SE
 const QUARTER_NAMES = ['Q1 (JAN-MAR)', 'Q2 (ABR-JUN)', 'Q3 (JUL-SET)', 'Q4 (OUT-DEZ)'];
 const SEMESTER_NAMES = ['1º SEM (JAN-JUN)', '2º SEM (JUL-DEZ)'];
 const CURRENT_MONTH = new Date().getMonth();
+const CATEGORY_PALETTE = ['#00f1fe', '#00e0fe', '#0580d3', '#74f5ff', '#9ecaff', '#63f5c5', '#ffd166'];
+
+function getNextCategoryColor() {
+    return CATEGORY_PALETTE[categories.length % CATEGORY_PALETTE.length];
+}
+
+function getContrastColor(hexColor) {
+    const color = hexColor.replace('#', '');
+    const fullColor = color.length === 3 ? color.split('').map(char => char + char).join('') : color;
+    const red = parseInt(fullColor.slice(0, 2), 16);
+    const green = parseInt(fullColor.slice(2, 4), 16);
+    const blue = parseInt(fullColor.slice(4, 6), 16);
+    const luminance = (0.299 * red + 0.587 * green + 0.114 * blue) / 255;
+    return luminance > 0.52 ? '#002022' : '#ddfcff';
+}
 
 // Helper: get data for current year
 function getYearData() {
@@ -76,7 +95,12 @@ function toast(message, type = 'info', duration = 3500) {
     const icons = { success: 'check-circle', error: 'alert-circle', info: 'info' };
     const el = document.createElement('div');
     el.className = `toast ${type}`;
-    el.innerHTML = `<i data-lucide="${icons[type] || 'info'}"></i><span>${message}</span>`;
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    const icon = createIcon(icons[type] || 'info');
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = message;
+    el.append(icon, text);
     container.appendChild(el);
     if (typeof lucide !== 'undefined') lucide.createIcons();
 
@@ -229,69 +253,125 @@ function shareUrl() {
 }
 
 // History Management
-function pushHistory() {
-    const snapshot = {
+function createSnapshot() {
+    return {
         ganttData: JSON.parse(JSON.stringify(ganttData)),
         categories: JSON.parse(JSON.stringify(categories))
     };
-    undoStack.push(snapshot);
+}
+
+function resetHistory() {
+    undoStack = [];
+    redoStack = [];
+    historyBaseline = createSnapshot();
+    updateUndoRedoButtons();
+}
+
+function pushHistory() {
+    const currentSnapshot = createSnapshot();
+    if (historyBaseline) undoStack.push(historyBaseline);
     if (undoStack.length > MAX_HISTORY) undoStack.shift();
+    historyBaseline = currentSnapshot;
     redoStack = [];
     updateUndoRedoButtons();
 }
 
 function undo() {
     if (undoStack.length === 0) return;
-    const current = {
-        ganttData: JSON.parse(JSON.stringify(ganttData)),
-        categories: JSON.parse(JSON.stringify(categories))
-    };
+    const current = createSnapshot();
     redoStack.push(current);
     const previous = undoStack.pop();
     Object.keys(ganttData).forEach(k => delete ganttData[k]);
     Object.assign(ganttData, previous.ganttData);
     categories.length = 0;
     categories.push(...previous.categories);
+    historyBaseline = previous;
     saveToLocalStorage();
-    renderGantt();
+    renderAll();
     updateUndoRedoButtons();
 }
 
 function redo() {
     if (redoStack.length === 0) return;
-    const current = {
-        ganttData: JSON.parse(JSON.stringify(ganttData)),
-        categories: JSON.parse(JSON.stringify(categories))
-    };
+    const current = createSnapshot();
     undoStack.push(current);
     const next = redoStack.pop();
     Object.keys(ganttData).forEach(k => delete ganttData[k]);
     Object.assign(ganttData, next.ganttData);
     categories.length = 0;
     categories.push(...next.categories);
+    historyBaseline = next;
     saveToLocalStorage();
-    renderGantt();
+    renderAll();
     updateUndoRedoButtons();
 }
 
 function updateUndoRedoButtons() {
     const undoBtn = document.getElementById('undoBtn');
     const redoBtn = document.getElementById('redoBtn');
-    if (undoBtn) undoBtn.style.opacity = undoStack.length === 0 ? '0.4' : '1';
-    if (redoBtn) redoBtn.style.opacity = redoStack.length === 0 ? '0.4' : '1';
+    if (undoBtn) undoBtn.disabled = undoStack.length === 0;
+    if (redoBtn) redoBtn.disabled = redoStack.length === 0;
 }
 
 // Initialize the Gantt chart
-function initGantt() {
-    loadFromLocalStorage();
-    loadFromUrl();
+async function initGantt() {
+    const isOnline = typeof GanttAPI !== 'undefined' && await GanttAPI.checkHealth();
+    if (isOnline) {
+        await loadFromAPI();
+        updateConnectionStatus(true);
+    } else {
+        loadFromLocalStorage();
+        loadFromUrl();
+        updateConnectionStatus(false);
+    }
+    resetHistory();
     updateAssigneeFilter();
     renderAll();
     setupEventListeners();
 }
 
+// Update connection status indicator
+function updateConnectionStatus(online) {
+    const indicator = document.querySelector('.system-status');
+    if (!indicator) return;
+    const dot = indicator.querySelector('.pulse-indicator');
+    const label = indicator.querySelector('span:last-child');
+    if (online) {
+        if (dot) dot.style.background = 'var(--success, #63f5c5)';
+        if (dot) dot.style.boxShadow = '0 0 12px var(--success, #63f5c5)';
+        if (label) label.textContent = 'Sincronizado';
+        indicator.title = 'Dados salvos no PostgreSQL';
+    } else {
+        if (dot) dot.style.background = 'var(--primary, #00f1fe)';
+        if (dot) dot.style.boxShadow = '0 0 12px var(--primary, #00f1fe)';
+        if (label) label.textContent = 'Salvo localmente';
+        indicator.title = 'Dados salvos neste navegador';
+    }
+}
+
+// Load data from API
+async function loadFromAPI() {
+    try {
+        const data = await GanttAPI.getYearTasks(currentYear);
+        if (data.categories) {
+            categories.length = 0;
+            categories.push(...data.categories.map(c => ({
+                id: c.slug, name: c.name, color: c.color
+            })));
+        }
+        Object.keys(ganttData).forEach(k => delete ganttData[k]);
+        Object.assign(ganttData, data.ganttData);
+        if (!ganttData[currentYear]) ganttData[currentYear] = {};
+    } catch (err) {
+        console.error('Erro ao carregar da API, usando localStorage:', err);
+        loadFromLocalStorage();
+        updateConnectionStatus(false);
+    }
+}
+
 function renderAll() {
     updateAssigneeFilter();
+    updateStats();
     if (viewMode === 'bar') { renderBarChart(); return; }
     renderGantt();
 }
@@ -343,9 +423,9 @@ function renderGantt() {
     const theadRow = document.querySelector('.gantt-table thead tr');
     if (theadRow) {
         const headers = getZoomHeaders();
-        theadRow.innerHTML = '<th>PROJETOS</th>' + headers.map((h, i) => {
+        theadRow.innerHTML = '<th scope="col">INICIATIVAS</th>' + headers.map((h, i) => {
             const curClass = isCurrentMonthInZoomCol(i) ? ' class="current-month"' : '';
-            return `<th${curClass}>${h}</th>`;
+            return `<th scope="col"${curClass}>${h}</th>`;
         }).join('');
     }
 
@@ -369,16 +449,48 @@ function renderGantt() {
 
         const totalCols = numCols + 1;
         const categoryHeader = document.createElement('tr');
-        categoryHeader.innerHTML = `
-            <td colspan="${totalCols}" class="category-header" style="background: linear-gradient(135deg, ${adjustColor(category.color, -40)}, ${category.color}) !important;">
-                <span class="category-toggle${isCollapsed ? ' collapsed' : ''}" onclick="toggleCategory('${category.id}')">
-                    <i data-lucide="chevron-down"></i>
-                </span>
-                ${category.name.toUpperCase()}
-                <button class="btn-icon" onclick="editCategory('${category.id}')" title="Editar Categoria"><i data-lucide="pencil"></i></button>
-                <button class="btn-icon" onclick="deleteCategory('${category.id}')" title="Excluir Categoria"><i data-lucide="trash-2"></i></button>
-            </td>
-        `;
+        categoryHeader.className = 'category-row';
+
+        const categoryCell = document.createElement('td');
+        categoryCell.colSpan = totalCols;
+        categoryCell.className = 'category-header';
+        categoryCell.style.setProperty('background', `linear-gradient(135deg, ${adjustColor(category.color, -40)}, ${category.color})`, 'important');
+        categoryCell.style.setProperty('--category-contrast', getContrastColor(category.color));
+
+        const toggleButton = document.createElement('button');
+        toggleButton.type = 'button';
+        toggleButton.className = `category-toggle${isCollapsed ? ' collapsed' : ''}`;
+        toggleButton.title = isCollapsed ? 'Expandir categoria' : 'Recolher categoria';
+        toggleButton.setAttribute('aria-label', `${isCollapsed ? 'Expandir' : 'Recolher'} categoria ${category.name}`);
+        toggleButton.setAttribute('aria-expanded', String(!isCollapsed));
+        toggleButton.appendChild(createIcon('chevron-down'));
+        toggleButton.addEventListener('click', () => toggleCategory(category.id));
+
+        const categoryName = document.createElement('span');
+        categoryName.className = 'category-name';
+        categoryName.textContent = category.name;
+
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'btn-icon';
+        editButton.title = 'Editar categoria';
+        editButton.setAttribute('aria-label', `Editar categoria ${category.name}`);
+        editButton.appendChild(createIcon('pencil'));
+        editButton.addEventListener('click', () => editCategory(category.id));
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'btn-icon';
+        deleteButton.title = 'Excluir categoria';
+        deleteButton.setAttribute('aria-label', `Excluir categoria ${category.name}`);
+        deleteButton.appendChild(createIcon('trash-2'));
+        deleteButton.addEventListener('click', () => deleteCategory(category.id));
+
+        const categoryContent = document.createElement('div');
+        categoryContent.className = 'category-content';
+        categoryContent.append(toggleButton, categoryName, editButton, deleteButton);
+        categoryCell.appendChild(categoryContent);
+        categoryHeader.appendChild(categoryCell);
         tbody.appendChild(categoryHeader);
 
         if (isCollapsed) return;
@@ -409,7 +521,7 @@ function createTaskRow(task, category, index, numCols) {
     const progress = task.progress || 0;
     const isMilestone = task.milestone || false;
     const categoryConfig = categories.find(c => c.id === category);
-    const color = categoryConfig ? categoryConfig.color : '#60a5fa';
+    const color = categoryConfig ? categoryConfig.color : '#00f1fe';
     const zoomMonths = getZoomColumns(task.months);
 
     // Drag events
@@ -420,52 +532,68 @@ function createTaskRow(task, category, index, numCols) {
 
     // Task name cell
     const nameCell = document.createElement('td');
-    nameCell.style.display = 'flex';
-    nameCell.style.flexDirection = 'column';
-    nameCell.style.alignItems = 'stretch';
-    nameCell.style.gap = '4px';
 
     const nameRow = document.createElement('div');
-    nameRow.style.display = 'flex';
-    nameRow.style.justifyContent = 'space-between';
-    nameRow.style.alignItems = 'center';
-    nameRow.style.gap = '8px';
+    nameRow.className = 'task-name-row';
 
     // Drag handle
     const dragHandle = document.createElement('span');
     dragHandle.className = 'drag-handle';
     dragHandle.innerHTML = '<i data-lucide="grip-vertical"></i>';
     dragHandle.title = 'Arrastar para reordenar';
+    dragHandle.setAttribute('aria-hidden', 'true');
 
-    const taskNameSpan = document.createElement('span');
-    taskNameSpan.textContent = (isMilestone ? '◆ ' : '') + task.name;
-    taskNameSpan.style.cursor = 'pointer';
-    taskNameSpan.style.flex = '1';
-    if (isMilestone) taskNameSpan.style.fontWeight = '700';
-    taskNameSpan.addEventListener('click', () => editTask(category, index));
+    const taskNameButton = document.createElement('button');
+    taskNameButton.type = 'button';
+    taskNameButton.className = 'task-name-button';
+    taskNameButton.textContent = (isMilestone ? '◆ ' : '') + task.name;
+    taskNameButton.title = `Editar ${task.name}`;
+    taskNameButton.addEventListener('click', () => editTask(category, index));
 
     // Dependency indicator
     if (task.dependency) {
         const depBadge = document.createElement('span');
-        depBadge.style.cssText = 'font-size:0.7rem;background:var(--accent-purple, #a855f7);color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px;';
-        depBadge.textContent = '↳ dep';
+        depBadge.className = 'dependency-badge';
+        depBadge.textContent = 'dependência';
         depBadge.title = 'Depende de: ' + task.dependency;
-        taskNameSpan.appendChild(depBadge);
+        taskNameButton.appendChild(depBadge);
     }
 
+    const taskActions = document.createElement('div');
+    taskActions.className = 'task-row-actions';
+
+    const moveUpBtn = document.createElement('button');
+    moveUpBtn.type = 'button';
+    moveUpBtn.className = 'btn-icon';
+    moveUpBtn.title = 'Mover tarefa para cima';
+    moveUpBtn.setAttribute('aria-label', `Mover ${task.name} para cima`);
+    moveUpBtn.disabled = index === 0;
+    moveUpBtn.appendChild(createIcon('arrow-up'));
+    moveUpBtn.addEventListener('click', () => moveTask(category, index, -1));
+
+    const moveDownBtn = document.createElement('button');
+    moveDownBtn.type = 'button';
+    moveDownBtn.className = 'btn-icon';
+    moveDownBtn.title = 'Mover tarefa para baixo';
+    moveDownBtn.setAttribute('aria-label', `Mover ${task.name} para baixo`);
+    moveDownBtn.disabled = index === getYearData()[category].length - 1;
+    moveDownBtn.appendChild(createIcon('arrow-down'));
+    moveDownBtn.addEventListener('click', () => moveTask(category, index, 1));
+
     const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
     deleteBtn.className = 'btn-icon';
     const deleteIcon = createIcon('trash-2');
     deleteBtn.appendChild(deleteIcon);
-    deleteBtn.title = 'Excluir Tarefa';
+    deleteBtn.title = 'Excluir tarefa';
+    deleteBtn.setAttribute('aria-label', `Excluir ${task.name}`);
     deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         deleteTask(category, index);
     });
 
-    nameRow.appendChild(dragHandle);
-    nameRow.appendChild(taskNameSpan);
-    nameRow.appendChild(deleteBtn);
+    taskActions.append(moveUpBtn, moveDownBtn, deleteBtn);
+    nameRow.append(dragHandle, taskNameButton, taskActions);
     nameCell.appendChild(nameRow);
 
     // Progress bar
@@ -480,14 +608,16 @@ function createTaskRow(task, category, index, numCols) {
     progressLabel.className = 'task-progress-text';
     progressLabel.textContent = progress + '% concluído';
 
-    nameCell.appendChild(progressContainer);
-    nameCell.appendChild(progressLabel);
+    const taskMeta = document.createElement('div');
+    taskMeta.className = 'task-meta';
+    taskMeta.append(progressContainer, progressLabel);
+    nameCell.appendChild(taskMeta);
 
     if (task.assignee) {
         const assigneeLabel = document.createElement('span');
-        assigneeLabel.className = 'task-progress-text';
-        assigneeLabel.style.color = 'var(--primary-blue-light)';
-        assigneeLabel.textContent = '👤 ' + task.assignee;
+        assigneeLabel.className = 'assignee-label';
+        assigneeLabel.append(createIcon('user-round'));
+        assigneeLabel.append(document.createTextNode(task.assignee));
         nameCell.appendChild(assigneeLabel);
     }
 
@@ -504,12 +634,28 @@ function createTaskRow(task, category, index, numCols) {
             cell.classList.add('active');
             if (isMilestone) cell.classList.add('milestone');
             cell.dataset.tooltip = `${task.name} — ${getZoomColumnRange(col)} (${progress}% concluído)`;
-            cell.addEventListener('mouseenter', showTooltip);
-            cell.addEventListener('mouseleave', hideTooltip);
         }
 
         if (zoomLevel === 12) {
-            cell.addEventListener('click', () => toggleMonth(category, index, col));
+            const monthButton = document.createElement('button');
+            monthButton.type = 'button';
+            monthButton.className = 'month-toggle';
+            monthButton.setAttribute('aria-pressed', String(zoomMonths.includes(col)));
+            monthButton.setAttribute('aria-label', `${zoomMonths.includes(col) ? 'Remover' : 'Adicionar'} ${MONTH_NAMES[col]} ${zoomMonths.includes(col) ? 'da' : 'à'} tarefa ${task.name}`);
+            if (cell.dataset.tooltip) monthButton.dataset.tooltip = cell.dataset.tooltip;
+            monthButton.addEventListener('click', () => toggleMonth(category, index, col));
+            monthButton.addEventListener('mouseenter', showTooltip);
+            monthButton.addEventListener('mouseleave', hideTooltip);
+            monthButton.addEventListener('focus', showTooltip);
+            monthButton.addEventListener('blur', hideTooltip);
+            cell.appendChild(monthButton);
+        } else if (zoomMonths.includes(col)) {
+            cell.tabIndex = 0;
+            cell.setAttribute('aria-label', cell.dataset.tooltip);
+            cell.addEventListener('mouseenter', showTooltip);
+            cell.addEventListener('mouseleave', hideTooltip);
+            cell.addEventListener('focus', showTooltip);
+            cell.addEventListener('blur', hideTooltip);
         }
         row.appendChild(cell);
     }
@@ -534,7 +680,26 @@ function toggleMonth(category, taskIndex, month) {
 
     pushHistory();
     saveToLocalStorage();
-    renderGantt();
+    if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline() && task.id) {
+        GanttAPI.updateTask(task.id, { months: task.months }).catch(err => console.error('API sync error:', err));
+    }
+    renderAll();
+}
+
+// Keyboard-accessible alternative to drag and drop
+function moveTask(category, index, direction) {
+    const tasks = getYearData()[category];
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= tasks.length) return;
+
+    const [movedTask] = tasks.splice(index, 1);
+    tasks.splice(targetIndex, 0, movedTask);
+    pushHistory();
+    saveToLocalStorage();
+    if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline() && movedTask && movedTask.id) {
+        GanttAPI.reorderTask(movedTask.id, direction).catch(err => console.error('API sync error:', err));
+    }
+    renderAll();
 }
 
 // Collapse/Expand Category
@@ -549,13 +714,16 @@ function toggleCategory(categoryId) {
 
 // Tooltip
 function showTooltip(e) {
+    hideTooltip();
+    const target = e.currentTarget || e.target;
+    if (!target.dataset.tooltip) return;
     const tooltip = document.createElement('div');
     tooltip.className = 'tooltip';
     tooltip.id = 'activeTooltip';
-    tooltip.textContent = e.target.dataset.tooltip;
+    tooltip.textContent = target.dataset.tooltip;
     document.body.appendChild(tooltip);
 
-    const rect = e.target.getBoundingClientRect();
+    const rect = target.getBoundingClientRect();
     tooltip.style.left = rect.left + rect.width / 2 - tooltip.offsetWidth / 2 + 'px';
     tooltip.style.top = rect.top - tooltip.offsetHeight - 8 + 'px';
 }
@@ -605,7 +773,6 @@ document.addEventListener('dragend', () => {
 // Statistics / Dashboard
 function updateStats() {
     const dash = document.getElementById('dashboard');
-    if (!dash || dash.style.display === 'none') return;
 
     let totalTasks = 0;
     let completed = 0;
@@ -633,29 +800,62 @@ function updateStats() {
     let busiestIdx = 0;
     monthCounts.forEach((c, i) => { if (c > monthCounts[busiestIdx]) busiestIdx = i; });
 
+    const headerTaskCount = document.getElementById('headerTaskCount');
+    const headerCategoryCount = document.getElementById('headerCategoryCount');
+    if (headerTaskCount) headerTaskCount.textContent = totalTasks;
+    if (headerCategoryCount) headerCategoryCount.textContent = categories.length;
+
+    if (!dash) return;
     document.getElementById('dashTotalTasks').textContent = totalTasks;
     document.getElementById('dashCompleted').textContent = completed;
     document.getElementById('dashInProgress').textContent = inProgress;
     document.getElementById('dashNotStarted').textContent = notStarted;
-    document.getElementById('dashBusiestMonth').textContent = MONTH_NAMES[busiestIdx];
+    document.getElementById('dashBusiestMonth').textContent = totalTasks > 0 ? MONTH_NAMES[busiestIdx] : '—';
     document.getElementById('dashAvgProgress').textContent = avgProgress + '%';
 }
 
 // Theme Toggle
 function toggleTheme() {
-    isLightTheme = !isLightTheme;
-    document.body.classList.toggle('light', isLightTheme);
-    localStorage.setItem('gantt-theme', isLightTheme ? 'light' : 'dark');
+  isLightTheme = !isLightTheme;
+  document.body.classList.toggle('light', isLightTheme);
+  updateBrandLogo();
+  localStorage.setItem('gantt-theme', isLightTheme ? 'light' : 'dark');
     const icon = document.querySelector('.theme-toggle i');
     if (icon) icon.setAttribute('data-lucide', isLightTheme ? 'moon' : 'sun');
+    const button = document.getElementById('themeToggle');
+    if (button) {
+        button.setAttribute('aria-pressed', String(isLightTheme));
+        button.setAttribute('aria-label', isLightTheme ? 'Ativar tema escuro' : 'Ativar tema claro');
+        button.title = isLightTheme ? 'Ativar tema escuro' : 'Ativar tema claro';
+    }
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // Apply saved theme
 function applyTheme() {
-    document.body.classList.toggle('light', isLightTheme);
-    const icon = document.querySelector('.theme-toggle i');
+  document.body.classList.toggle('light', isLightTheme);
+  updateBrandLogo();
+  const icon = document.querySelector('.theme-toggle i');
     if (icon) icon.setAttribute('data-lucide', isLightTheme ? 'moon' : 'sun');
+    const button = document.getElementById('themeToggle');
+    if (button) {
+        button.setAttribute('aria-pressed', String(isLightTheme));
+        button.setAttribute('aria-label', isLightTheme ? 'Ativar tema escuro' : 'Ativar tema claro');
+        button.title = isLightTheme ? 'Ativar tema escuro' : 'Ativar tema claro';
+    }
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function updateBrandLogo() {
+  const darkLogo = document.getElementById('brandLogoDark');
+  const lightLogo = document.getElementById('brandLogoLight');
+  const frame = document.getElementById('brandLogoFrame');
+  if (!darkLogo || !lightLogo || !frame) return;
+
+  darkLogo.hidden = isLightTheme;
+  lightLogo.hidden = !isLightTheme;
+  frame.classList.toggle('logo-light', isLightTheme);
+  frame.classList.toggle('logo-dark', !isLightTheme);
 }
 
 // Update assignee filter dropdown
@@ -707,7 +907,7 @@ function importCsv(e) {
 
                 const catId = cat.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
                 if (!categories.find(c => c.id === catId)) {
-                    categories.push({ id: catId, name: cat, color: '#' + Math.floor(Math.random()*16777215).toString(16) });
+                    categories.push({ id: catId, name: cat, color: getNextCategoryColor() });
                 }
                 if (!imported[catId]) imported[catId] = [];
                 imported[catId].push(task);
@@ -716,6 +916,7 @@ function importCsv(e) {
             Object.keys(ganttData).forEach(k => delete ganttData[k]);
             ganttData[currentYear] = imported;
             saveToLocalStorage();
+            resetHistory();
             updateAssigneeFilter();
             renderAll();
             toast('CSV importado com sucesso!', 'success');
@@ -752,14 +953,9 @@ function renderBarChart() {
         const catHeader = document.createElement('div');
         catHeader.className = 'bar-category-header';
         catHeader.style.background = `linear-gradient(135deg, ${adjustColor(cat.color, -40)}, ${cat.color})`;
-        catHeader.textContent = cat.name.toUpperCase();
+        catHeader.style.color = getContrastColor(cat.color);
+        catHeader.textContent = cat.name;
         container.appendChild(catHeader);
-
-        const maxMonths = Math.max(...filtered.flatMap(t => t.months.length ? [Math.max(...t.months)] : [0]), 1);
-        const extremes = filtered.flatMap(t => t.months.length ? [Math.min(...t.months), Math.max(...t.months)] : []);
-        const globalMin = extremes.length ? Math.min(...extremes) : 0;
-        const globalMax = extremes.length ? Math.max(...extremes) : 11;
-        const range = globalMax - globalMin + 1;
 
         filtered.forEach(task => {
             const row = document.createElement('div');
@@ -768,51 +964,57 @@ function renderBarChart() {
             const label = document.createElement('div');
             label.className = 'bar-label';
             const prefix = task.milestone ? '◆ ' : '';
-            label.innerHTML = `${prefix}${task.name}` + (task.assignee ? `<span class="bar-assignee">👤 ${task.assignee}</span>` : '');
+            label.appendChild(document.createTextNode(prefix + task.name));
+            if (task.assignee) {
+                const assignee = document.createElement('span');
+                assignee.className = 'bar-assignee';
+                assignee.textContent = `Responsável: ${task.assignee}`;
+                label.appendChild(assignee);
+            }
             row.appendChild(label);
 
             const track = document.createElement('div');
             track.className = 'bar-track';
 
-            // Month markers
+            // Timeline markers
             for (let m = 0; m < numCols; m++) {
-                if (zoomLevel === 12) {
-                    const marker = document.createElement('div');
-                    marker.className = 'bar-month-marker';
-                    marker.style.left = ((m - globalMin) / range * 100) + '%';
-                    track.appendChild(marker);
-                    if (m % 3 === 0) {
-                        const ml = document.createElement('div');
-                        ml.className = 'bar-month-label';
-                        ml.style.left = ((m - globalMin) / range * 100) + '%';
-                        ml.textContent = MONTH_NAMES[m];
-                        track.appendChild(ml);
-                    }
-                }
+                const marker = document.createElement('div');
+                marker.className = 'bar-month-marker';
+                marker.style.left = (m / numCols * 100) + '%';
+                track.appendChild(marker);
+
+                const markerLabel = document.createElement('div');
+                markerLabel.className = 'bar-month-label';
+                markerLabel.style.left = (m / numCols * 100) + '%';
+                markerLabel.textContent = getZoomHeaders()[m];
+                track.appendChild(markerLabel);
             }
 
-            const months = task.months;
-            if (months.length > 0) {
-                const start = Math.min(...months);
-                const end = Math.max(...months);
-                const catColor = categories.find(c => c.id === task._cat.id)?.color || '#60a5fa';
+            const columns = getZoomColumns(task.months);
+            if (columns.length > 0) {
+                const start = Math.min(...columns);
+                const end = Math.max(...columns);
+                const catColor = categories.find(c => c.id === task._cat.id)?.color || '#00f1fe';
 
-                if (task.milestone && months.length === 1) {
+                if (task.milestone && columns.length === 1) {
                     const bar = document.createElement('div');
                     bar.className = 'bar-fill milestone-bar';
-                    bar.style.left = ((start - globalMin) / range * 100) + '%';
+                    bar.style.left = `calc(${(start / numCols) * 100}% + ${(50 / numCols)}%)`;
                     bar.style.top = '6px';
                     bar.style.height = '16px';
                     bar.title = task.name;
+                    bar.setAttribute('aria-label', `${task.name}, milestone em ${getZoomColumnRange(start)}`);
                     track.appendChild(bar);
                 } else {
                     const bar = document.createElement('div');
                     bar.className = 'bar-fill';
                     bar.style.background = catColor;
-                    bar.style.left = ((start - globalMin) / range * 100) + '%';
-                    bar.style.width = ((end - start + 1) / range * 100) + '%';
+                    bar.style.color = getContrastColor(catColor);
+                    bar.style.left = (start / numCols * 100) + '%';
+                    bar.style.width = ((end - start + 1) / numCols * 100) + '%';
                     bar.textContent = `${getZoomColumnRange(start)} — ${getZoomColumnRange(end)}`;
                     bar.title = `${task.name} (${task.progress || 0}%)`;
+                    bar.setAttribute('aria-label', `${task.name}, ${getZoomColumnRange(start)} a ${getZoomColumnRange(end)}, ${task.progress || 0}% concluído`);
                     track.appendChild(bar);
                 }
             }
@@ -821,6 +1023,59 @@ function renderBarChart() {
             container.appendChild(row);
         });
     });
+
+    if (allTasks.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'empty-state';
+        emptyState.append(createIcon('search-x'));
+        const message = document.createElement('p');
+        message.textContent = 'Nenhuma iniciativa corresponde aos filtros atuais.';
+        emptyState.appendChild(message);
+        container.appendChild(emptyState);
+    }
+}
+
+function setDashboardVisibility(show) {
+    const dashboard = document.getElementById('dashboard');
+    const statsButton = document.getElementById('statsBtn');
+    dashboard.style.display = show ? 'block' : 'none';
+    statsButton.setAttribute('aria-expanded', String(show));
+    statsButton.setAttribute('aria-label', show ? 'Ocultar indicadores' : 'Exibir indicadores');
+    if (show) updateStats();
+}
+
+function openModalElement(modal, initialFocus) {
+    lastFocusedElement = document.activeElement;
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('modal-open');
+    requestAnimationFrame(() => initialFocus?.focus());
+}
+
+function closeModalElement(modal) {
+    if (!modal.classList.contains('active')) return;
+    modal.classList.remove('active');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('modal-open');
+    if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus();
+    lastFocusedElement = null;
+}
+
+function trapModalFocus(event, modal) {
+    const focusable = [...modal.querySelectorAll(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )].filter(element => element.offsetParent !== null);
+    if (focusable.length === 0) return;
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+    }
 }
 
 // Setup event listeners
@@ -842,11 +1097,18 @@ function setupEventListeners() {
     document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
     // Year selector
-    document.getElementById('yearSelect').addEventListener('change', (e) => {
+    document.getElementById('yearSelect').addEventListener('change', async (e) => {
         currentYear = e.target.value;
         document.getElementById('yearDisplay').textContent = currentYear;
         if (!ganttData[currentYear]) ganttData[currentYear] = {};
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline()) {
+            const data = await GanttAPI.getYearTasks(currentYear);
+            if (data.ganttData && data.ganttData[currentYear]) {
+                ganttData[currentYear] = data.ganttData[currentYear];
+            }
+        }
         saveToLocalStorage();
+        resetHistory();
         renderAll();
     });
     document.getElementById('yearSelect').value = currentYear;
@@ -855,8 +1117,12 @@ function setupEventListeners() {
     // View toggle (segmented: table / bar chart)
     function setViewMode(mode) {
         viewMode = mode;
-        document.getElementById('viewTableBtn').classList.toggle('active', mode === 'table');
-        document.getElementById('viewBarBtn').classList.toggle('active', mode === 'bar');
+        const tableButton = document.getElementById('viewTableBtn');
+        const barButton = document.getElementById('viewBarBtn');
+        tableButton.classList.toggle('active', mode === 'table');
+        barButton.classList.toggle('active', mode === 'bar');
+        tableButton.setAttribute('aria-pressed', String(mode === 'table'));
+        barButton.setAttribute('aria-pressed', String(mode === 'bar'));
         document.getElementById('ganttWrapper').style.display = mode === 'bar' ? 'none' : '';
         document.getElementById('barChartView').style.display = mode === 'bar' ? '' : 'none';
         renderAll();
@@ -871,12 +1137,40 @@ function setupEventListeners() {
         e.stopPropagation();
         const isOpen = dataMenu.classList.toggle('open');
         dataMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (isOpen) {
+            requestAnimationFrame(() => dataMenu.querySelector('[role="menuitem"]')?.focus());
+        }
     });
     document.addEventListener('click', () => {
         dataMenu.classList.remove('open');
         dataMenuBtn.setAttribute('aria-expanded', 'false');
     });
-    dataMenu.addEventListener('click', (e) => e.stopPropagation());
+    dataMenu.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (e.target.closest('.dropdown-item')) {
+            dataMenu.classList.remove('open');
+            dataMenuBtn.setAttribute('aria-expanded', 'false');
+            dataMenuBtn.focus();
+        }
+    });
+    dataMenu.addEventListener('keydown', (e) => {
+        const items = [...dataMenu.querySelectorAll('[role="menuitem"]')];
+        const currentIndex = items.indexOf(document.activeElement);
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            const direction = e.key === 'ArrowDown' ? 1 : -1;
+            const nextIndex = (currentIndex + direction + items.length) % items.length;
+            items[nextIndex].focus();
+        } else if (e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            items[e.key === 'Home' ? 0 : items.length - 1].focus();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            dataMenu.classList.remove('open');
+            dataMenuBtn.setAttribute('aria-expanded', 'false');
+            dataMenuBtn.focus();
+        }
+    });
 
     // Assignee filter
     document.getElementById('assigneeFilter').addEventListener('change', (e) => {
@@ -887,9 +1181,7 @@ function setupEventListeners() {
     // Dashboard toggle
     document.getElementById('statsBtn').addEventListener('click', () => {
         const dash = document.getElementById('dashboard');
-        const isVisible = dash.style.display !== 'none';
-        dash.style.display = isVisible ? 'none' : 'grid';
-        if (!isVisible) updateStats();
+        setDashboardVisibility(dash.style.display === 'none');
     });
 
     // Zoom
@@ -918,6 +1210,8 @@ function setupEventListeners() {
     });
 
     document.getElementById('categoryCancelBtn').addEventListener('click', closeCategoryModal);
+    document.getElementById('taskModalClose').addEventListener('click', closeTaskModal);
+    document.getElementById('categoryModalClose').addEventListener('click', closeCategoryModal);
     document.getElementById('categoryForm').addEventListener('submit', saveCategory);
 
     const searchInput = document.getElementById('searchInput');
@@ -939,16 +1233,31 @@ function setupEventListeners() {
     categoryModal.addEventListener('click', (e) => { if (e.target === categoryModal) closeCategoryModal(); });
 
     document.addEventListener('keydown', (e) => {
+        const activeModal = document.querySelector('.modal.active');
+        if (e.key === 'Tab' && activeModal) {
+            trapModalFocus(e, activeModal);
+            return;
+        }
         if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
         if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); }
         if (e.ctrlKey && e.key === 'f') { e.preventDefault(); searchInput.focus(); }
         if (e.ctrlKey && e.key === 'd') { e.preventDefault();
             const dash = document.getElementById('dashboard');
-            dash.style.display = dash.style.display === 'none' ? 'grid' : 'none';
-            if (dash.style.display !== 'none') updateStats();
+            setDashboardVisibility(dash.style.display === 'none');
         }
-        if (e.key === 'Escape') { closeTaskModal(); closeCategoryModal(); }
-        if (e.key === 'n' && !e.ctrlKey && !e.metaKey && document.activeElement === document.body) { openTaskModal(); }
+        if (e.key === 'Escape') {
+            if (document.getElementById('taskModal').classList.contains('active')) closeTaskModal();
+            else if (document.getElementById('categoryModal').classList.contains('active')) closeCategoryModal();
+            else if (dataMenu.classList.contains('open')) {
+                dataMenu.classList.remove('open');
+                dataMenuBtn.setAttribute('aria-expanded', 'false');
+                dataMenuBtn.focus();
+            }
+        }
+        if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !activeModal && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+            e.preventDefault();
+            openTaskModal();
+        }
     });
 
     applyTheme();
@@ -1015,13 +1324,13 @@ function openTaskModal(category = null, index = null) {
         deleteTaskBtn.style.display = 'none';
     }
 
-    modal.classList.add('active');
+    openModalElement(modal, taskName);
 }
 
 // Close modal
 function closeTaskModal() {
     const modal = document.getElementById('taskModal');
-    modal.classList.remove('active');
+    closeModalElement(modal);
     currentEditingCategory = null;
     currentEditingIndex = null;
 }
@@ -1039,7 +1348,10 @@ function deleteTask(category, index) {
         getYearData()[category].splice(index, 1);
         pushHistory();
         saveToLocalStorage();
-        renderGantt();
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline() && task.id) {
+            GanttAPI.deleteTask(task.id).catch(err => console.error('API sync error:', err));
+        }
+        renderAll();
     }
 }
 
@@ -1071,25 +1383,45 @@ function saveTask(e) {
     if (taskAssignee) task.assignee = taskAssignee;
 
     if (currentEditingCategory !== null && currentEditingIndex !== null) {
+        const oldTask = getYearData()[currentEditingCategory][currentEditingIndex];
+        if (oldTask && oldTask.id) task.id = oldTask.id;
         getYearData()[currentEditingCategory][currentEditingIndex] = task;
 
         if (currentEditingCategory !== taskCategory) {
             getYearData()[currentEditingCategory].splice(currentEditingIndex, 1);
             getYearData()[taskCategory].push(task);
         }
+
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline() && task.id) {
+            const { id, name: _n, months: _m, progress: _p, milestone: _ms, assignee: _a, dependency: _d, ...rest } = task;
+            GanttAPI.updateTask(task.id, {
+                name: taskName, months, progress: task.progress,
+                milestone: task.milestone, assignee: taskAssignee || null,
+                category_slug: taskCategory
+            }).catch(err => console.error('API sync error:', err));
+        }
     } else {
         getYearData()[taskCategory].push(task);
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline()) {
+            GanttAPI.createTask(currentYear, {
+                name: taskName, category_slug: taskCategory, months,
+                progress: task.progress, milestone: task.milestone,
+                assignee: taskAssignee || null
+            }).then(created => {
+                task.id = created.id;
+            }).catch(err => console.error('API sync error:', err));
+        }
     }
 
     pushHistory();
     saveToLocalStorage();
-    renderGantt();
+    renderAll();
     closeTaskModal();
 }
 
 // Export data to JSON
 function exportData() {
-    const exportObj = { ganttData, categories };
+    const exportObj = { ganttData, categories, currentYear };
     const dataStr = JSON.stringify(exportObj, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -1104,13 +1436,13 @@ function exportData() {
 
 // Export chart as PNG
 function exportPng() {
-    const wrapper = document.querySelector('.gantt-wrapper');
+    const wrapper = document.getElementById(viewMode === 'bar' ? 'barChartView' : 'ganttWrapper');
     if (typeof html2canvas === 'undefined') {
         toast('Biblioteca de exportação não carregada. Verifique sua conexão.', 'error');
         return;
     }
     html2canvas(wrapper, {
-        backgroundColor: '#111827',
+        backgroundColor: isLightTheme ? '#effbfc' : '#00161b',
         scale: 2,
         useCORS: true
     }).then(canvas => {
@@ -1156,25 +1488,50 @@ function importData(e) {
                 return;
             }
 
-            for (const [key, tasks] of Object.entries(importedData.ganttData)) {
-                if (!Array.isArray(tasks)) {
-                    toast(`Formato de arquivo inválido: dados da categoria "${key}" não são um array.`, 'error');
+            const firstValue = Object.values(importedData.ganttData)[0];
+            const isMultiYear = firstValue && typeof firstValue === 'object' && !Array.isArray(firstValue);
+            const normalizedData = isMultiYear
+                ? importedData.ganttData
+                : { [currentYear]: importedData.ganttData };
+
+            for (const [year, yearData] of Object.entries(normalizedData)) {
+                if (!yearData || typeof yearData !== 'object' || Array.isArray(yearData)) {
+                    toast(`Formato de arquivo inválido: planejamento do ano "${year}" inválido.`, 'error');
                     return;
                 }
-                for (const task of tasks) {
-                    if (!task.name || !Array.isArray(task.months)) {
-                        toast(`Formato de arquivo inválido: tarefa sem name ou months na categoria "${key}".`, 'error');
+
+                for (const [categoryId, tasks] of Object.entries(yearData)) {
+                    if (!Array.isArray(tasks)) {
+                        toast(`Formato de arquivo inválido: dados da categoria "${categoryId}" não são uma lista.`, 'error');
                         return;
+                    }
+                    for (const task of tasks) {
+                        if (!task.name || !Array.isArray(task.months)) {
+                            toast(`Formato de arquivo inválido: tarefa incompleta na categoria "${categoryId}".`, 'error');
+                            return;
+                        }
                     }
                 }
             }
 
             Object.keys(ganttData).forEach(key => delete ganttData[key]);
-            Object.assign(ganttData, importedData.ganttData);
+            Object.assign(ganttData, normalizedData);
             categories.length = 0;
             categories.push(...importedData.categories);
-            renderGantt();
+            if (importedData.currentYear && ganttData[importedData.currentYear]) {
+                currentYear = String(importedData.currentYear);
+            }
+            document.getElementById('yearSelect').value = currentYear;
+            document.getElementById('yearDisplay').textContent = currentYear;
+            saveToLocalStorage();
+            resetHistory();
+            renderAll();
             toast('Dados importados com sucesso!', 'success');
+            if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline()) {
+                GanttAPI.migrate({ ganttData, categories: categories.map(({id, name, color}) => ({id, name, color})) })
+                    .then(() => toast('Sincronizado com o banco de dados!', 'success'))
+                    .catch(err => console.error('API sync error:', err));
+            }
         } catch (error) {
             toast('Erro ao importar arquivo: ' + error.message, 'error');
         }
@@ -1204,15 +1561,15 @@ function openCategoryModal(categoryId = null) {
     } else {
         currentEditingCategoryId = null;
         modalTitle.textContent = 'Adicionar Nova Categoria';
-        categoryColorInput.value = '#' + Math.floor(Math.random() * 16777215).toString(16);
+        categoryColorInput.value = getNextCategoryColor();
     }
 
-    modal.classList.add('active');
+    openModalElement(modal, categoryNameInput);
 }
 
 function closeCategoryModal() {
     const modal = document.getElementById('categoryModal');
-    modal.classList.remove('active');
+    closeModalElement(modal);
     currentEditingCategoryId = null;
 }
 
@@ -1223,15 +1580,16 @@ function saveCategory(e) {
     const categoryColor = document.getElementById('categoryColor').value;
 
     if (currentEditingCategoryId) {
-        // Edit existing category
         const category = categories.find(c => c.id === currentEditingCategoryId);
         category.name = categoryName;
         category.color = categoryColor;
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline() && category.dbId) {
+            GanttAPI.updateCategory(category.dbId, { name: categoryName, color: categoryColor })
+                .catch(err => console.error('API sync error:', err));
+        }
     } else {
-        // Add new category
         const categoryId = categoryName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
 
-        // Check if ID already exists
         if (categories.find(c => c.id === categoryId)) {
             toast('Uma categoria com este nome já existe!', 'error');
             return;
@@ -1244,11 +1602,18 @@ function saveCategory(e) {
         });
 
         getYearData()[categoryId] = [];
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline()) {
+            GanttAPI.createCategory({ slug: categoryId, name: categoryName, color: categoryColor })
+                .then(created => {
+                    const cat = categories.find(c => c.id === categoryId);
+                    if (cat) cat.dbId = created.id;
+                }).catch(err => console.error('API sync error:', err));
+        }
     }
 
     pushHistory();
     saveToLocalStorage();
-    renderGantt();
+    renderAll();
     closeCategoryModal();
 }
 
@@ -1263,13 +1628,17 @@ function deleteCategory(categoryId) {
     }
 
     if (confirm(`Tem certeza que deseja excluir a categoria "${categories.find(c => c.id === categoryId).name}"? Todas as tarefas desta categoria serão perdidas.`)) {
+        const cat = categories.find(c => c.id === categoryId);
         const index = categories.findIndex(c => c.id === categoryId);
         categories.splice(index, 1);
         delete getYearData()[categoryId];
         collapsedCategories.delete(categoryId);
         pushHistory();
         saveToLocalStorage();
-        renderGantt();
+        if (typeof GanttAPI !== 'undefined' && GanttAPI.isOnline() && cat && cat.dbId) {
+            GanttAPI.deleteCategory(cat.dbId).catch(err => console.error('API sync error:', err));
+        }
+        renderAll();
     }
 }
 
@@ -1292,10 +1661,13 @@ function updateLegend() {
     categories.forEach(category => {
         const item = document.createElement('div');
         item.className = 'legend-item';
-        item.innerHTML = `
-            <div class="legend-color" style="background: ${category.color};"></div>
-            <span>${category.name}</span>
-        `;
+        const swatch = document.createElement('span');
+        swatch.className = 'legend-color';
+        swatch.style.background = category.color;
+        swatch.style.color = category.color;
+        const label = document.createElement('span');
+        label.textContent = category.name;
+        item.append(swatch, label);
         legend.appendChild(item);
     });
 }

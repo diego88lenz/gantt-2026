@@ -1,0 +1,17 @@
+{
+  "name": "gantt-2026-server",
+  "version": "1.0.0",
+  "description": "API REST para persistência do Gantt 2026 em PostgreSQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "migrate": "node migrate.js",
+    "init-db": "node init-db.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}

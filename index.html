@@ -4,314 +4,418 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planejamento 2026</title>
-    <meta name="description" content="Gráfico de Gantt interativo para planejamento e gestão de projetos em 2026">
+    <meta name="theme-color" content="#00161b">
+    <title>Planejamento de Dados</title>
+    <meta name="description" content="Roadmap interativo para planejamento e gestão das iniciativas de dados.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=20260804-logo2">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <h1>Planejamento Inteligência de Dados <span id="yearDisplay">2026</span></h1>
-            <p class="subtitle">Planejamento e Gestão</p>
-            <div class="header-right">
-                <select id="yearSelect" class="year-select">
-                    <option value="2025">2025</option>
-                    <option value="2026" selected>2026</option>
-                    <option value="2027">2027</option>
-                    <option value="2028">2028</option>
-                </select>
-                <button class="theme-toggle" id="themeToggle" title="Alternar tema">
-                    <i data-lucide="sun"></i>
+    <a class="skip-link" href="#mainContent">Pular para o conteúdo principal</a>
+    <div class="ambient-grid" aria-hidden="true"></div>
+
+    <div class="app-shell">
+        <header class="topbar">
+            <a class="brand" href="#mainContent" aria-label="H2O Innovation — planejamento de dados">
+                <span class="brand-logo-frame logo-dark" id="brandLogoFrame">
+                    <img id="brandLogoDark" class="brand-logo brand-logo-dark"
+                        src="./H2O%20DARK.png?v=20260804-logo2" width="4280" height="2177"
+                        alt="H2O Innovation" fetchpriority="high">
+                    <img id="brandLogoLight" class="brand-logo brand-logo-light"
+                        src="./H2O%20WHITE.png?v=20260804-logo2" width="4280" height="2177"
+                        alt="H2O Innovation" hidden>
+                </span>
+            </a>
+
+            <div class="topbar-actions">
+                <div class="system-status" title="Os dados são salvos neste navegador">
+                    <span class="pulse-indicator" aria-hidden="true"></span>
+                    <span>Salvo localmente</span>
+                </div>
+
+                <label class="compact-field" for="yearSelect">
+                    <span>Ano</span>
+                    <select id="yearSelect" class="year-select">
+                        <option value="2025">2025</option>
+                        <option value="2026" selected>2026</option>
+                        <option value="2027">2027</option>
+                        <option value="2028">2028</option>
+                    </select>
+                </label>
+
+                <button class="icon-btn theme-toggle" id="themeToggle" type="button" title="Alternar tema"
+                    aria-label="Ativar tema claro" aria-pressed="false">
+                    <i data-lucide="sun" aria-hidden="true"></i>
                 </button>
             </div>
         </header>
 
-        <div class="toolbar">
-            <div class="toolbar-group">
-                <button class="btn btn-primary" id="addTaskBtn">
-                    <i data-lucide="plus"></i> Nova Tarefa
-                </button>
-                <button class="btn btn-ghost" id="addCategoryBtn">
-                    <i data-lucide="tags"></i> Categorias
-                </button>
-            </div>
-
-            <div class="toolbar-search">
-                <i data-lucide="search"></i>
-                <input type="text" id="searchInput" placeholder="Buscar tarefas...">
-            </div>
-
-            <div class="toolbar-group toolbar-view">
-                <div class="segmented" role="group" aria-label="Modo de visualização">
-                    <button class="seg-btn active" id="viewTableBtn" title="Visão de tabela">
-                        <i data-lucide="table-2"></i>
-                    </button>
-                    <button class="seg-btn" id="viewBarBtn" title="Visão de gráfico">
-                        <i data-lucide="bar-chart-3"></i>
-                    </button>
+        <main id="mainContent">
+            <section class="hero" aria-labelledby="pageTitle">
+                <div class="hero-copy">
+                    <div class="eyebrow"><span></span> Planejamento e gestão</div>
+                    <h1 id="pageTitle">Roadmap de dados <span id="yearDisplay">2026</span></h1>
+                    <p>Transforme iniciativas complexas em um plano visual, coordenado e fácil de acompanhar.</p>
                 </div>
-                <select id="zoomSelect" class="select-control" title="Nível de zoom">
-                    <option value="12">Anual</option>
-                    <option value="4">Trimestral</option>
-                    <option value="2">Semestral</option>
-                </select>
-                <select id="assigneeFilter" class="select-control" title="Filtrar por responsável">
-                    <option value="">Responsáveis</option>
-                </select>
-            </div>
 
-            <div class="toolbar-group toolbar-actions">
-                <button class="icon-btn" id="undoBtn" title="Desfazer (Ctrl+Z)">
-                    <i data-lucide="undo-2"></i>
-                </button>
-                <button class="icon-btn" id="redoBtn" title="Refazer (Ctrl+Y)">
-                    <i data-lucide="redo-2"></i>
-                </button>
-                <button class="icon-btn" id="statsBtn" title="Dashboard (Ctrl+D)">
-                    <i data-lucide="layout-dashboard"></i>
-                </button>
-                <div class="dropdown">
-                    <button class="icon-btn" id="dataMenuBtn" title="Dados e compartilhamento" aria-haspopup="true"
-                        aria-expanded="false">
-                        <i data-lucide="more-horizontal"></i>
-                    </button>
-                    <div class="dropdown-menu" id="dataMenu">
-                        <button class="dropdown-item" id="exportBtn"><i data-lucide="download"></i> Exportar JSON</button>
-                        <button class="dropdown-item" id="exportPngBtn"><i data-lucide="image"></i> Exportar PNG</button>
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item" id="importBtn"><i data-lucide="upload"></i> Importar JSON</button>
-                        <button class="dropdown-item" id="importCsvBtn"><i data-lucide="file-spreadsheet"></i> Importar
-                            CSV</button>
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item" id="shareBtn"><i data-lucide="share-2"></i> Copiar link</button>
+                <div class="hero-insights" aria-label="Resumo do planejamento">
+                    <article class="insight-card">
+                        <span class="insight-icon"><i data-lucide="layers-3" aria-hidden="true"></i></span>
+                        <span>
+                            <strong id="headerTaskCount">0</strong>
+                            <small>iniciativas</small>
+                        </span>
+                    </article>
+                    <article class="insight-card">
+                        <span class="insight-icon"><i data-lucide="waypoints" aria-hidden="true"></i></span>
+                        <span>
+                            <strong id="headerCategoryCount">0</strong>
+                            <small>frentes de trabalho</small>
+                        </span>
+                    </article>
+                    <article class="insight-card insight-card-accent">
+                        <span class="insight-icon"><i data-lucide="calendar-range" aria-hidden="true"></i></span>
+                        <span>
+                            <strong>12</strong>
+                            <small>meses conectados</small>
+                        </span>
+                    </article>
+                </div>
+            </section>
+
+            <section class="control-panel" aria-label="Controles do planejamento">
+                <div class="toolbar toolbar-primary">
+                    <div class="toolbar-group toolbar-create">
+                        <button class="btn btn-primary" id="addTaskBtn" type="button">
+                            <i data-lucide="plus" aria-hidden="true"></i>
+                            <span>Nova tarefa</span>
+                            <kbd>N</kbd>
+                        </button>
+                        <button class="btn btn-secondary" id="addCategoryBtn" type="button">
+                            <i data-lucide="tags" aria-hidden="true"></i>
+                            <span>Categorias</span>
+                        </button>
+                    </div>
+
+                    <label class="toolbar-search" for="searchInput">
+                        <i data-lucide="search" aria-hidden="true"></i>
+                        <span class="sr-only">Buscar tarefas</span>
+                        <input type="search" id="searchInput" placeholder="Buscar uma iniciativa..." autocomplete="off">
+                        <kbd>Ctrl F</kbd>
+                    </label>
+
+                    <div class="toolbar-group toolbar-history" aria-label="Histórico e dados">
+                        <button class="icon-btn" id="undoBtn" type="button" title="Desfazer (Ctrl+Z)"
+                            aria-label="Desfazer">
+                            <i data-lucide="undo-2" aria-hidden="true"></i>
+                        </button>
+                        <button class="icon-btn" id="redoBtn" type="button" title="Refazer (Ctrl+Y)"
+                            aria-label="Refazer">
+                            <i data-lucide="redo-2" aria-hidden="true"></i>
+                        </button>
+                        <button class="icon-btn" id="statsBtn" type="button" title="Indicadores (Ctrl+D)"
+                            aria-label="Exibir indicadores" aria-expanded="false">
+                            <i data-lucide="chart-no-axes-combined" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown">
+                            <button class="icon-btn" id="dataMenuBtn" type="button" title="Dados e compartilhamento"
+                                aria-label="Abrir menu de dados" aria-haspopup="menu" aria-expanded="false">
+                                <i data-lucide="ellipsis" aria-hidden="true"></i>
+                            </button>
+                            <div class="dropdown-menu" id="dataMenu" role="menu" aria-label="Dados e compartilhamento">
+                                <span class="dropdown-label">Exportar</span>
+                                <button class="dropdown-item" id="exportBtn" type="button" role="menuitem">
+                                    <i data-lucide="braces" aria-hidden="true"></i>
+                                    <span><strong>Arquivo JSON</strong><small>Backup editável</small></span>
+                                </button>
+                                <button class="dropdown-item" id="exportPngBtn" type="button" role="menuitem">
+                                    <i data-lucide="image" aria-hidden="true"></i>
+                                    <span><strong>Imagem PNG</strong><small>Visão para apresentação</small></span>
+                                </button>
+                                <div class="dropdown-divider" role="separator"></div>
+                                <span class="dropdown-label">Importar</span>
+                                <button class="dropdown-item" id="importBtn" type="button" role="menuitem">
+                                    <i data-lucide="file-json" aria-hidden="true"></i>
+                                    <span><strong>Arquivo JSON</strong><small>Restaurar planejamento</small></span>
+                                </button>
+                                <button class="dropdown-item" id="importCsvBtn" type="button" role="menuitem">
+                                    <i data-lucide="file-spreadsheet" aria-hidden="true"></i>
+                                    <span><strong>Planilha CSV</strong><small>Importar tarefas</small></span>
+                                </button>
+                                <div class="dropdown-divider" role="separator"></div>
+                                <button class="dropdown-item" id="shareBtn" type="button" role="menuitem">
+                                    <i data-lucide="link" aria-hidden="true"></i>
+                                    <span><strong>Copiar link</strong><small>Compartilhar esta versão</small></span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <input type="file" id="importCsvFile" accept=".csv" style="display: none;">
-            <input type="file" id="importFile" accept=".json" style="display: none;">
-        </div>
+                <div class="toolbar toolbar-secondary">
+                    <div class="view-context">
+                        <span class="view-context-icon"><i data-lucide="scan-line" aria-hidden="true"></i></span>
+                        <span><strong>Visualização</strong><small>Organize o nível de detalhe</small></span>
+                    </div>
 
-        <div class="gantt-wrapper" id="ganttWrapper">
-            <div class="gantt-container" id="ganttContainer">
-                <table class="gantt-table" id="ganttTable">
-                    <thead>
-                        <tr>
-                            <th>PROJETOS</th>
-                            <th>JAN</th>
-                            <th>FEV</th>
-                            <th>MAR</th>
-                            <th>ABR</th>
-                            <th>MAI</th>
-                            <th>JUN</th>
-                            <th>JUL</th>
-                            <th>AGO</th>
-                            <th>SET</th>
-                            <th>OUT</th>
-                            <th>NOV</th>
-                            <th>DEZ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ganttBody">
-                        <!-- Content will be generated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+                    <div class="toolbar-group toolbar-view">
+                        <div class="segmented" role="group" aria-label="Modo de visualização">
+                            <button class="seg-btn active" id="viewTableBtn" type="button" aria-label="Visão em grade"
+                                aria-pressed="true" title="Visão em grade">
+                                <i data-lucide="table-2" aria-hidden="true"></i><span>Grade</span>
+                            </button>
+                            <button class="seg-btn" id="viewBarBtn" type="button" aria-label="Visão em barras"
+                                aria-pressed="false" title="Visão em barras">
+                                <i data-lucide="gantt-chart-square" aria-hidden="true"></i><span>Barras</span>
+                            </button>
+                        </div>
 
-        <!-- Bar Chart View -->
-        <div class="gantt-wrapper" id="barChartView" style="display: none;">
-            <div class="bar-chart-container" id="barChartContainer">
-                <!-- Generated by JS -->
-            </div>
-        </div>
+                        <label class="filter-field" for="zoomSelect">
+                            <span>Escala</span>
+                            <select id="zoomSelect" class="select-control">
+                                <option value="12">Mensal</option>
+                                <option value="4">Trimestral</option>
+                                <option value="2">Semestral</option>
+                            </select>
+                        </label>
 
-        <!-- Dashboard -->
-        <div class="dashboard" id="dashboard" style="display: none;">
-            <div class="dash-card">
-                <span class="dash-value" id="dashTotalTasks">0</span>
-                <span class="dash-label">Total de Tarefas</span>
-            </div>
-            <div class="dash-card">
-                <span class="dash-value" id="dashCompleted">0</span>
-                <span class="dash-label">Concluídas (100%)</span>
-            </div>
-            <div class="dash-card">
-                <span class="dash-value" id="dashInProgress">0</span>
-                <span class="dash-label">Em Andamento</span>
-            </div>
-            <div class="dash-card">
-                <span class="dash-value" id="dashNotStarted">0</span>
-                <span class="dash-label">Não Iniciadas</span>
-            </div>
-            <div class="dash-card">
-                <span class="dash-value" id="dashBusiestMonth">-</span>
-                <span class="dash-label">Mês Mais Carregado</span>
-            </div>
-            <div class="dash-card">
-                <span class="dash-value" id="dashAvgProgress">0%</span>
-                <span class="dash-label">Progresso Médio</span>
-            </div>
-        </div>
+                        <label class="filter-field filter-field-wide" for="assigneeFilter">
+                            <span>Responsável</span>
+                            <select id="assigneeFilter" class="select-control">
+                                <option value="">Todos os responsáveis</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
 
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color projects"></div>
-                <span>Geral</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color data"></div>
-                <span>Dados</span>
-            </div>
-        </div>
+                <input class="visually-hidden-file" type="file" id="importCsvFile" accept=".csv">
+                <input class="visually-hidden-file" type="file" id="importFile" accept=".json">
+            </section>
+
+            <section class="dashboard" id="dashboard" aria-labelledby="dashboardTitle" style="display: none;">
+                <div class="section-heading dashboard-heading">
+                    <div>
+                        <span class="section-kicker">Leitura executiva</span>
+                        <h2 id="dashboardTitle">Indicadores do plano</h2>
+                    </div>
+                    <span class="live-badge"><span class="pulse-indicator" aria-hidden="true"></span> Atualizado</span>
+                </div>
+                <div class="dashboard-grid">
+                    <article class="dash-card">
+                        <span class="dash-icon"><i data-lucide="list-checks" aria-hidden="true"></i></span>
+                        <span class="dash-value" id="dashTotalTasks">0</span>
+                        <span class="dash-label">Total de tarefas</span>
+                    </article>
+                    <article class="dash-card">
+                        <span class="dash-icon"><i data-lucide="circle-check-big" aria-hidden="true"></i></span>
+                        <span class="dash-value" id="dashCompleted">0</span>
+                        <span class="dash-label">Concluídas</span>
+                    </article>
+                    <article class="dash-card">
+                        <span class="dash-icon"><i data-lucide="loader-circle" aria-hidden="true"></i></span>
+                        <span class="dash-value" id="dashInProgress">0</span>
+                        <span class="dash-label">Em andamento</span>
+                    </article>
+                    <article class="dash-card">
+                        <span class="dash-icon"><i data-lucide="circle-dashed" aria-hidden="true"></i></span>
+                        <span class="dash-value" id="dashNotStarted">0</span>
+                        <span class="dash-label">Não iniciadas</span>
+                    </article>
+                    <article class="dash-card">
+                        <span class="dash-icon"><i data-lucide="calendar-clock" aria-hidden="true"></i></span>
+                        <span class="dash-value" id="dashBusiestMonth">—</span>
+                        <span class="dash-label">Mês mais carregado</span>
+                    </article>
+                    <article class="dash-card dash-card-featured">
+                        <span class="dash-icon"><i data-lucide="gauge" aria-hidden="true"></i></span>
+                        <span class="dash-value" id="dashAvgProgress">0%</span>
+                        <span class="dash-label">Progresso médio</span>
+                    </article>
+                </div>
+            </section>
+
+            <section class="workspace" aria-labelledby="timelineTitle">
+                <div class="section-heading workspace-heading">
+                    <div>
+                        <span class="section-kicker">Mapa de execução</span>
+                        <h2 id="timelineTitle">Linha do tempo</h2>
+                    </div>
+                    <div class="legend" aria-label="Legenda das categorias"></div>
+                </div>
+
+                <div class="gantt-wrapper" id="ganttWrapper">
+                    <div class="scroll-hint"><i data-lucide="move-horizontal" aria-hidden="true"></i> Arraste para explorar os meses</div>
+                    <div class="gantt-container" id="ganttContainer" tabindex="0" aria-label="Tabela do planejamento">
+                        <table class="gantt-table" id="ganttTable">
+                            <caption class="sr-only">Planejamento de tarefas por mês e categoria</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Iniciativas</th>
+                                    <th scope="col">JAN</th>
+                                    <th scope="col">FEV</th>
+                                    <th scope="col">MAR</th>
+                                    <th scope="col">ABR</th>
+                                    <th scope="col">MAI</th>
+                                    <th scope="col">JUN</th>
+                                    <th scope="col">JUL</th>
+                                    <th scope="col">AGO</th>
+                                    <th scope="col">SET</th>
+                                    <th scope="col">OUT</th>
+                                    <th scope="col">NOV</th>
+                                    <th scope="col">DEZ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ganttBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="gantt-wrapper" id="barChartView" style="display: none;">
+                    <div class="bar-chart-container" id="barChartContainer"></div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <span><span class="pulse-indicator" aria-hidden="true"></span> Planejamento pronto para edição</span>
+            <span>Atalhos: <kbd>N</kbd> nova tarefa · <kbd>Ctrl D</kbd> indicadores</span>
+        </footer>
     </div>
 
-    <!-- Modal for Adding/Editing Tasks -->
-    <div class="modal" id="taskModal">
-        <div class="modal-content">
-            <h2 id="modalTitle">Adicionar Nova Tarefa</h2>
+    <div class="modal" id="taskModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-hidden="true">
+        <div class="modal-content modal-content-wide">
+            <div class="modal-header">
+                <div>
+                    <span class="section-kicker">Configuração da iniciativa</span>
+                    <h2 id="modalTitle">Adicionar nova tarefa</h2>
+                    <p>Defina os responsáveis, o avanço e a janela de execução.</p>
+                </div>
+                <button class="icon-btn modal-close" id="taskModalClose" type="button" aria-label="Fechar formulário">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </div>
+
             <form id="taskForm">
-                <div class="form-group">
-                    <label for="taskName">Nome da Tarefa:</label>
-                    <input type="text" id="taskName" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="taskCategory">Categoria:</label>
-                    <select id="taskCategory" required>
-                        <option value="projects">Geral</option>
-                        <option value="data">Dados</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="taskAssignee">Responsável:</label>
-                    <input type="text" id="taskAssignee" placeholder="Nome do responsável">
-                </div>
-
-                <div class="form-group">
-                    <label for="taskProgress">Progresso (%):</label>
-                    <div class="progress-input-group">
-                        <input type="range" id="taskProgress" min="0" max="100" value="0" step="5">
-                        <span class="progress-value" id="progressValue">0%</span>
+                <div class="form-grid">
+                    <div class="form-group form-group-full">
+                        <label for="taskName">Nome da tarefa <span aria-hidden="true">*</span></label>
+                        <input type="text" id="taskName" required placeholder="Ex.: Publicar dashboard executivo">
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="checkbox-label">
+                    <div class="form-group">
+                        <label for="taskCategory">Categoria <span aria-hidden="true">*</span></label>
+                        <select id="taskCategory" required>
+                            <option value="projects">Geral</option>
+                            <option value="data">Dados</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskAssignee">Responsável</label>
+                        <input type="text" id="taskAssignee" placeholder="Nome do responsável" autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskDependency">Dependência</label>
+                        <div id="dependencyGroup">
+                            <select id="taskDependency">
+                                <option value="">Nenhuma</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group progress-form-group">
+                        <label for="taskProgress">Progresso</label>
+                        <div class="progress-input-group">
+                            <input type="range" id="taskProgress" min="0" max="100" value="0" step="5">
+                            <output class="progress-value" id="progressValue" for="taskProgress">0%</output>
+                        </div>
+                    </div>
+
+                    <label class="checkbox-label form-group-full">
                         <input type="checkbox" id="taskMilestone">
-                        <span>Marcos / Milestone</span>
+                        <span class="check-ui" aria-hidden="true"><i data-lucide="check"></i></span>
+                        <span><strong>Marcar como milestone</strong><small>Um marco representa uma entrega pontual e concluída.</small></span>
                     </label>
-                </div>
 
-                <div class="form-group" id="dependencyGroup">
-                    <label for="taskDependency">Dependência (tarefa anterior):</label>
-                    <select id="taskDependency">
-                        <option value="">Nenhuma</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Meses:</label>
-                    <div class="month-checkboxes">
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-0" value="0">
-                            <label for="month-0">JAN</label>
+                    <fieldset class="form-group form-group-full month-fieldset">
+                        <legend>Meses de execução</legend>
+                        <div class="month-checkboxes">
+                            <div class="month-checkbox"><input type="checkbox" id="month-0" value="0"><label for="month-0">JAN</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-1" value="1"><label for="month-1">FEV</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-2" value="2"><label for="month-2">MAR</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-3" value="3"><label for="month-3">ABR</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-4" value="4"><label for="month-4">MAI</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-5" value="5"><label for="month-5">JUN</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-6" value="6"><label for="month-6">JUL</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-7" value="7"><label for="month-7">AGO</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-8" value="8"><label for="month-8">SET</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-9" value="9"><label for="month-9">OUT</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-10" value="10"><label for="month-10">NOV</label></div>
+                            <div class="month-checkbox"><input type="checkbox" id="month-11" value="11"><label for="month-11">DEZ</label></div>
                         </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-1" value="1">
-                            <label for="month-1">FEV</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-2" value="2">
-                            <label for="month-2">MAR</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-3" value="3">
-                            <label for="month-3">ABR</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-4" value="4">
-                            <label for="month-4">MAI</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-5" value="5">
-                            <label for="month-5">JUN</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-6" value="6">
-                            <label for="month-6">JUL</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-7" value="7">
-                            <label for="month-7">AGO</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-8" value="8">
-                            <label for="month-8">SET</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-9" value="9">
-                            <label for="month-9">OUT</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-10" value="10">
-                            <label for="month-10">NOV</label>
-                        </div>
-                        <div class="month-checkbox">
-                            <input type="checkbox" id="month-11" value="11">
-                            <label for="month-11">DEZ</label>
-                        </div>
-                    </div>
+                    </fieldset>
                 </div>
 
                 <div class="modal-actions">
-                    <button type="button" class="btn btn-danger" id="deleteTaskBtn"
-                        style="display: none; margin-right: auto;">Excluir</button>
-                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <button type="button" class="btn btn-danger" id="deleteTaskBtn" style="display: none;">
+                        <i data-lucide="trash-2" aria-hidden="true"></i> Excluir
+                    </button>
+                    <div class="modal-actions-main">
+                        <button type="button" class="btn btn-ghost" id="cancelBtn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar tarefa</button>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal for Adding/Editing Categories -->
-    <div class="modal" id="categoryModal">
-        <div class="modal-content">
-            <h2 id="categoryModalTitle">Adicionar Nova Categoria</h2>
+    <div class="modal" id="categoryModal" role="dialog" aria-modal="true" aria-labelledby="categoryModalTitle"
+        aria-hidden="true">
+        <div class="modal-content modal-content-compact">
+            <div class="modal-header">
+                <div>
+                    <span class="section-kicker">Organização visual</span>
+                    <h2 id="categoryModalTitle">Adicionar categoria</h2>
+                    <p>Crie uma frente de trabalho e escolha sua cor.</p>
+                </div>
+                <button class="icon-btn modal-close" id="categoryModalClose" type="button" aria-label="Fechar formulário">
+                    <i data-lucide="x" aria-hidden="true"></i>
+                </button>
+            </div>
+
             <form id="categoryForm">
                 <div class="form-group">
-                    <label for="categoryName">Nome da Categoria:</label>
-                    <input type="text" id="categoryName" required>
+                    <label for="categoryName">Nome da categoria <span aria-hidden="true">*</span></label>
+                    <input type="text" id="categoryName" required placeholder="Ex.: Governança">
                 </div>
 
                 <div class="form-group">
-                    <label for="categoryColor">Cor:</label>
-                    <input type="color" id="categoryColor" required>
+                    <label for="categoryColor">Cor da categoria</label>
+                    <div class="color-field">
+                        <input type="color" id="categoryColor" required>
+                        <span>Escolha uma cor com bom contraste no roadmap.</span>
+                    </div>
                 </div>
 
-                <div class="modal-actions">
-                    <button type="button" class="btn btn-secondary" id="categoryCancelBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
+                <div class="modal-actions modal-actions-end">
+                    <button type="button" class="btn btn-ghost" id="categoryCancelBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar categoria</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
-    <div class="toast-container" id="toastContainer"></div>
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="app.js"></script>
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-    </script>
+    <script src="api.js?v=20260804-db"></script>
+    <script src="app.js?v=20260804-db"></script>
+    <script>lucide.createIcons();</script>
 </body>
 
 </html>

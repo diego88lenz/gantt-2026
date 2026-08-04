@@ -12,3 +12,14 @@ Desktop.ini
 # Backup files
 *.backup
 *.bak
+~
+
+# Dependencies
+server/node_modules/
+
+# Environment
+.env
+.env.local
+
+# Docker volumes
+pgdata/

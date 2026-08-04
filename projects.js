@@ -57,6 +57,7 @@ const ProjectsModule = (() => {
                 <td>${escapeHtml(p.company || '—')}</td>
                 <td>${escapeHtml(p.assignee || '—')}</td>
                 <td>${escapeHtml(p.requester || '—')}</td>
+                <td>${p.url ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" class="proj-link" title="${escapeHtml(p.url)}"><i data-lucide="external-link"></i></a>` : '—'}</td>
                 <td><span class="proj-status-badge ${p.status}">${STATUS_LABELS[p.status] || p.status}</span></td>
                 <td><span class="proj-priority-dot ${p.priority}"></span>${PRIORITY_LABELS[p.priority] || p.priority}</td>
                 <td>${p.start_date ? new Date(p.start_date).toLocaleDateString('pt-BR') : '—'}</td>
@@ -92,6 +93,7 @@ const ProjectsModule = (() => {
             document.getElementById('projEndDate').value = project.end_date ? project.end_date.split('T')[0] : '';
             document.getElementById('projBudget').value = project.budget || '';
             document.getElementById('projTags').value = project.tags || '';
+            document.getElementById('projUrl').value = project.url || '';
 
             if (project.created_at) {
                 datesInfo.style.display = '';
@@ -136,6 +138,7 @@ const ProjectsModule = (() => {
             end_date: document.getElementById('projEndDate').value || null,
             budget: document.getElementById('projBudget').value || null,
             tags: document.getElementById('projTags').value || null,
+            url: document.getElementById('projUrl').value || null,
         };
 
         try {

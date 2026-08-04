@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS projects (
     end_date        DATE,
     budget          DECIMAL(12,2),
     tags            VARCHAR(300),
+    url             VARCHAR(1000),
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -414,6 +414,22 @@ body.light .projects-table-wrap {
   color: var(--error);
 }
 
+.proj-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--primary-dim);
+  transition: color var(--transition);
+}
+
+.proj-link svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.proj-link:hover {
+  color: var(--primary-soft);
+}
+
 /* Textarea in form */
 .form-group textarea {
   width: 100%;

@@ -1209,6 +1209,45 @@ function setupEventListeners() {
         }
     });
 
+    // Convert task to project
+    document.getElementById('taskToProjectBtn').addEventListener('click', async () => {
+        if (currentEditingCategory === null || currentEditingIndex === null) return;
+        const task = getYearData()[currentEditingCategory][currentEditingIndex];
+        if (!confirm(`Transformar "${task.name}" em um projeto?\n\nA tarefa será copiada para a aba Projetos.`)) return;
+
+        const months = task.months.length > 0 ? task.months.sort((a, b) => a - b) : [];
+        const project = {
+            name: task.name,
+            description: `Criado a partir da tarefa do roadmap ${currentYear}`,
+            type: 'data',
+            department: currentEditingCategory,
+            assignee: task.assignee || '',
+            requester: '',
+            status: (task.progress || 0) >= 100 ? 'completed' : (task.progress || 0) > 0 ? 'in_progress' : 'planning',
+            priority: 'medium',
+            start_date: months.length > 0 ? `${currentYear}-${String(months[0] + 1).padStart(2, '0')}-01` : null,
+            end_date: months.length > 1 ? `${currentYear}-${String(months[months.length - 1] + 1).padStart(2, '0')}-28` : null,
+            tags: `roadmap-${currentYear}`
+        };
+
+        try {
+            const resp = await fetch('/api/projects', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(project)
+            });
+            if (resp.ok) {
+                toast(`Tarefa "${task.name}" movida para Projetos!`, 'success');
+                closeTaskModal();
+            } else {
+                const err = await resp.json();
+                toast('Erro ao criar projeto: ' + err.error, 'error');
+            }
+        } catch (e) {
+            toast('Erro de conexão ao criar projeto', 'error');
+        }
+    });
+
     document.getElementById('categoryCancelBtn').addEventListener('click', closeCategoryModal);
     document.getElementById('taskModalClose').addEventListener('click', closeTaskModal);
     document.getElementById('categoryModalClose').addEventListener('click', closeCategoryModal);

@@ -7,7 +7,7 @@ const ProjectsModule = (() => {
     let editingId = null;
     let filters = { type: '', status: '', priority: '', search: '' };
 
-    const TYPE_LABELS = { data: '📊 Dados', ai: '🤖 IA', geo: '🗺️ Geo', analytics: '📈 Analytics' };
+    const TYPE_LABELS = { data: 'Dados', ai: 'IA', geo: 'Geo', analytics: 'Analytics' };
     const STATUS_LABELS = { planning: 'Planejando', in_progress: 'Em andamento', completed: 'Concluído', on_hold: 'Pausado', cancelled: 'Cancelado' };
     const PRIORITY_LABELS = { critical: 'Crítica', high: 'Alta', medium: 'Média', low: 'Baixa' };
 

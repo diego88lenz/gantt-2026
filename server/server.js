@@ -438,29 +438,27 @@ app.post('/api/projects', async (req, res) => {
 
 app.put('/api/projects/:id', async (req, res) => {
     const { id } = req.params;
-    const { name, description, type, department, company, assignee, requester,
-            status, priority, start_date, end_date, budget, tags, url, category } = req.body;
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    const fields = ['name', 'description', 'type', 'department', 'company', 'assignee',
+        'requester', 'status', 'priority', 'start_date', 'end_date', 'budget', 'tags', 'url', 'category'];
+
+    fields.forEach(f => {
+        if (req.body.hasOwnProperty(f)) {
+            updates.push(`${f} = $${idx++}`);
+            values.push(req.body[f]);
+        }
+    });
+
+    if (updates.length === 0) return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+
+    values.push(id);
     try {
         const result = await pool.query(
-            `UPDATE projects SET
-                name = COALESCE($1, name),
-                description = COALESCE($2, description),
-                type = COALESCE($3, type),
-                department = COALESCE($4, department),
-                company = COALESCE($5, company),
-                assignee = COALESCE($6, assignee),
-                requester = COALESCE($7, requester),
-                status = COALESCE($8, status),
-                priority = COALESCE($9, priority),
-                start_date = COALESCE($10, start_date),
-                end_date = COALESCE($11, end_date),
-                budget = COALESCE($12, budget),
-                tags = COALESCE($13, tags),
-                url = COALESCE($14, url),
-                category = COALESCE($15, category)
-             WHERE id = $16 RETURNING *`,
-            [name, description, type, department, company, assignee, requester,
-             status, priority, start_date, end_date, budget, tags, url, category, id]
+            `UPDATE projects SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
+            values
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Projeto não encontrado' });
         res.json(result.rows[0]);

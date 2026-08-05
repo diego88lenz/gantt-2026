@@ -191,8 +191,8 @@ const ProjectsModule = (() => {
         e.preventDefault();
         const data = {
             name: document.getElementById('projName').value,
-            description: document.getElementById('projDescription').value,
-            category: document.getElementById('projCategory').value,
+            description: document.getElementById('projDescription').value || null,
+            category: document.getElementById('projCategory').value || null,
             type: 'data',
             priority: document.getElementById('projPriority').value,
             department: document.getElementById('projDepartment').value,

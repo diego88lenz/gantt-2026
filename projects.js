@@ -22,8 +22,13 @@ const ProjectsModule = (() => {
         if (filters.search) params.set('search', filters.search);
 
         try {
-            const resp = await fetch(`/api/projects?${params}`);
-            projects = await resp.json();
+            const [projResp, cats] = await Promise.all([
+                fetch(`/api/projects?${params}`),
+                fetch('/api/categories').then(r => r.json()).catch(() => [])
+            ]);
+            projects = await projResp.json();
+            roadmapCategories = cats;
+            updateCategoryUI();
             renderTable();
             await loadStats();
         } catch (err) {
@@ -45,30 +50,32 @@ const ProjectsModule = (() => {
 
     async function loadLookups() {
         try {
-            const [depts, comps, persons, cats] = await Promise.all([
+            const [depts, comps, persons] = await Promise.all([
                 fetch('/api/departments').then(r => r.json()).catch(() => []),
                 fetch('/api/companies').then(r => r.json()).catch(() => []),
-                fetch('/api/persons').then(r => r.json()).catch(() => []),
-                fetch('/api/categories').then(r => r.json()).catch(() => [])
+                fetch('/api/persons').then(r => r.json()).catch(() => [])
             ]);
-            roadmapCategories = cats;
             const deptList = document.getElementById('deptList');
             const companyList = document.getElementById('companyList');
             const personList = document.getElementById('personList');
-            const catSelect = document.getElementById('projCategory');
             if (deptList) deptList.innerHTML = depts.map(d => `<option value="${escapeHtml(d.name)}">`).join('');
             if (companyList) companyList.innerHTML = comps.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
             if (personList) personList.innerHTML = persons.map(p => `<option value="${escapeHtml(p.name)}">`).join('');
-            if (catSelect) {
-                catSelect.innerHTML = '<option value="">Selecione...</option>' + cats.map(c => `<option value="${c.slug}" style="color:${c.color}">${c.name}</option>`).join('');
-            }
-            const filterCat = document.getElementById('projFilterCategory');
-            if (filterCat) {
-                const currentVal = filterCat.value;
-                filterCat.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
-                filterCat.value = currentVal;
-            }
         } catch { /* offline */ }
+    }
+
+    function updateCategoryUI() {
+        const cats = roadmapCategories || [];
+        const catSelect = document.getElementById('projCategory');
+        const filterCat = document.getElementById('projFilterCategory');
+        if (catSelect) {
+            catSelect.innerHTML = '<option value="">Selecione...</option>' + cats.map(c => `<option value="${c.slug}" style="color:${c.color}">${c.name}</option>`).join('');
+        }
+        if (filterCat) {
+            const currentVal = filterCat.value;
+            filterCat.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+            filterCat.value = currentVal;
+        }
     }
 
     function sortBy(key) {

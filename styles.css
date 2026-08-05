@@ -315,6 +315,40 @@ body.light .projects-table-wrap {
   border-bottom: 1px solid var(--outline-soft);
 }
 
+.projects-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  padding-right: 1.5rem;
+}
+
+.projects-table th.sortable:hover {
+  color: var(--primary-dim);
+}
+
+.projects-table th.sortable::after {
+  content: '';
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.3rem;
+  opacity: 0.25;
+  background: currentColor;
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+}
+
+.projects-table th.sortable.sort-asc::after {
+  opacity: 1;
+  color: var(--primary-dim);
+  transform: translateY(-30%);
+}
+
+.projects-table th.sortable.sort-desc::after {
+  opacity: 1;
+  color: var(--primary-dim);
+  transform: translateY(-70%) rotate(180deg);
+}
+
 .projects-table td {
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--outline-soft);

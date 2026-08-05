@@ -324,16 +324,16 @@
                     <table class="projects-table" id="projectsTable">
                         <thead>
                             <tr>
-                                <th>Projeto</th>
-                                <th>Tipo</th>
-                                <th>Departamento</th>
-                                <th>Empresa</th>
-                                <th>Responsável</th>
-                                <th>Solicitante</th>
-                                <th>Ano Conclusão</th>
-                                <th>Status</th>
-                                <th>Prioridade</th>
-                                <th>Início</th>
+                                <th data-sort="name" class="sortable" onclick="ProjectsModule.sortBy('name')">Projeto</th>
+                                <th data-sort="type" class="sortable" onclick="ProjectsModule.sortBy('type')">Tipo</th>
+                                <th data-sort="department" class="sortable" onclick="ProjectsModule.sortBy('department')">Departamento</th>
+                                <th data-sort="company" class="sortable" onclick="ProjectsModule.sortBy('company')">Empresa</th>
+                                <th data-sort="assignee" class="sortable" onclick="ProjectsModule.sortBy('assignee')">Responsável</th>
+                                <th data-sort="requester" class="sortable" onclick="ProjectsModule.sortBy('requester')">Solicitante</th>
+                                <th data-sort="end_date" class="sortable" onclick="ProjectsModule.sortBy('end_date')">Ano Conclusão</th>
+                                <th data-sort="status" class="sortable" onclick="ProjectsModule.sortBy('status')">Status</th>
+                                <th data-sort="priority" class="sortable" onclick="ProjectsModule.sortBy('priority')">Prioridade</th>
+                                <th data-sort="start_date" class="sortable" onclick="ProjectsModule.sortBy('start_date')">Início</th>
                                 <th></th>
                             </tr>
                         </thead>

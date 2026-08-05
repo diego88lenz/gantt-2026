@@ -6,6 +6,7 @@ const ProjectsModule = (() => {
     let projects = [];
     let editingId = null;
     let filters = { type: '', status: '', priority: '', search: '' };
+    let sortState = { key: null, asc: true };
 
     const TYPE_LABELS = { data: 'Dados', ai: 'IA', geo: 'Geo', analytics: 'Analytics' };
     const STATUS_LABELS = { planning: 'Planejando', in_progress: 'Em andamento', completed: 'Concluído', on_hold: 'Pausado', cancelled: 'Cancelado' };
@@ -56,9 +57,37 @@ const ProjectsModule = (() => {
         } catch { /* offline */ }
     }
 
+    function sortBy(key) {
+        if (sortState.key === key) {
+            sortState.asc = !sortState.asc;
+        } else {
+            sortState.key = key;
+            sortState.asc = true;
+        }
+        // Sort in place
+        const prioOrder = { critical: 0, high: 1, medium: 2, low: 3 };
+        projects.sort((a, b) => {
+            let va = (a[key] || '').toString().toLowerCase();
+            let vb = (b[key] || '').toString().toLowerCase();
+            if (key === 'priority') { va = prioOrder[a.priority] ?? 9; vb = prioOrder[b.priority] ?? 9; }
+            if (va < vb) return sortState.asc ? -1 : 1;
+            if (va > vb) return sortState.asc ? 1 : -1;
+            return 0;
+        });
+        renderTable();
+    }
+
     function renderTable() {
         const tbody = document.getElementById('projectsBody');
         if (!tbody) return;
+
+        // Update header sort indicators
+        const headers = document.querySelectorAll('.projects-table th[data-sort]');
+        headers.forEach(th => {
+            const key = th.dataset.sort;
+            th.classList.toggle('sort-asc', sortState.key === key && sortState.asc);
+            th.classList.toggle('sort-desc', sortState.key === key && !sortState.asc);
+        });
 
         if (projects.length === 0) {
             tbody.innerHTML = `<tr><td colspan="11" class="empty-projects"><p>Nenhum projeto cadastrado. Clique em "Novo Projeto" para começar.</p></td></tr>`;

@@ -479,6 +479,54 @@ app.delete('/api/projects/:id', async (req, res) => {
 });
 
 // =============================================================================
+// Lookup Tables — Departments, Companies, Persons
+// =============================================================================
+app.get('/api/departments', async (_req, res) => {
+    try {
+        const r = await pool.query('SELECT * FROM departments ORDER BY name');
+        res.json(r.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/departments', async (req, res) => {
+    try {
+        const r = await pool.query('INSERT INTO departments (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING *', [req.body.name]);
+        res.status(201).json(r.rows[0]);
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+app.get('/api/companies', async (_req, res) => {
+    try {
+        const r = await pool.query('SELECT * FROM companies ORDER BY name');
+        res.json(r.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/companies', async (req, res) => {
+    try {
+        const r = await pool.query('INSERT INTO companies (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING *', [req.body.name]);
+        res.status(201).json(r.rows[0]);
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+app.get('/api/persons', async (req, res) => {
+    try {
+        const role = req.query.role;
+        const q = role ? 'SELECT * FROM persons WHERE role = $1 ORDER BY name' : 'SELECT * FROM persons ORDER BY name';
+        const params = role ? [role] : [];
+        const r = await pool.query(q, params);
+        res.json(r.rows);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/persons', async (req, res) => {
+    try {
+        const r = await pool.query('INSERT INTO persons (name, role) VALUES ($1, $2) ON CONFLICT (name) DO UPDATE SET role=EXCLUDED.role RETURNING *', [req.body.name, req.body.role || 'assignee']);
+        res.status(201).json(r.rows[0]);
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// =============================================================================
 // Serve frontend
 // =============================================================================
 app.get('*', (req, res) => {

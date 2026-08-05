@@ -40,6 +40,22 @@ const ProjectsModule = (() => {
         } catch { /* offline */ }
     }
 
+    async function loadLookups() {
+        try {
+            const [depts, comps, persons] = await Promise.all([
+                fetch('/api/departments').then(r => r.json()).catch(() => []),
+                fetch('/api/companies').then(r => r.json()).catch(() => []),
+                fetch('/api/persons').then(r => r.json()).catch(() => [])
+            ]);
+            const deptList = document.getElementById('deptList');
+            const companyList = document.getElementById('companyList');
+            const personList = document.getElementById('personList');
+            if (deptList) deptList.innerHTML = depts.map(d => `<option value="${escapeHtml(d.name)}">`).join('');
+            if (companyList) companyList.innerHTML = comps.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
+            if (personList) personList.innerHTML = persons.map(p => `<option value="${escapeHtml(p.name)}">`).join('');
+        } catch { /* offline */ }
+    }
+
     function renderTable() {
         const tbody = document.getElementById('projectsBody');
         if (!tbody) return;
@@ -76,6 +92,7 @@ const ProjectsModule = (() => {
         const datesInfo = document.getElementById('projDatesInfo');
 
         form.reset();
+        loadLookups();
 
         if (project) {
             editingId = project.id;

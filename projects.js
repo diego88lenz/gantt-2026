@@ -61,7 +61,7 @@ const ProjectsModule = (() => {
         if (!tbody) return;
 
         if (projects.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="empty-projects"><p>Nenhum projeto cadastrado. Clique em "Novo Projeto" para começar.</p></td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" class="empty-projects"><p>Nenhum projeto cadastrado. Clique em "Novo Projeto" para começar.</p></td></tr>`;
             return;
         }
 
@@ -73,7 +73,7 @@ const ProjectsModule = (() => {
                 <td>${escapeHtml(p.company || '—')}</td>
                 <td>${escapeHtml(p.assignee || '—')}</td>
                 <td>${escapeHtml(p.requester || '—')}</td>
-                <td>${p.url ? `<a href="${escapeHtml(p.url)}" target="_blank" rel="noopener" class="proj-link" title="${escapeHtml(p.url)}"><i data-lucide="external-link"></i></a>` : '—'}</td>
+                <td>${p.end_date ? new Date(p.end_date).getFullYear() : '—'}</td>
                 <td><span class="proj-status-badge ${p.status}">${STATUS_LABELS[p.status] || p.status}</span></td>
                 <td><span class="proj-priority-dot ${p.priority}"></span>${PRIORITY_LABELS[p.priority] || p.priority}</td>
                 <td>${p.start_date ? new Date(p.start_date).toLocaleDateString('pt-BR') : '—'}</td>

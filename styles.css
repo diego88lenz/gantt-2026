@@ -318,35 +318,30 @@ body.light .projects-table-wrap {
 .projects-table th.sortable {
   cursor: pointer;
   user-select: none;
-  padding-right: 1.5rem;
+  position: relative;
 }
 
 .projects-table th.sortable:hover {
-  color: var(--primary-dim);
+  color: var(--on-surface-variant);
 }
 
 .projects-table th.sortable::after {
-  content: '';
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  width: 0.45rem;
-  height: 0.3rem;
-  opacity: 0.25;
-  background: currentColor;
-  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  content: ' \25B4\25BE';
+  font-size: 0.55rem;
+  opacity: 0.3;
+  letter-spacing: -2px;
 }
 
 .projects-table th.sortable.sort-asc::after {
+  content: ' \25B2';
   opacity: 1;
   color: var(--primary-dim);
-  transform: translateY(-30%);
 }
 
 .projects-table th.sortable.sort-desc::after {
+  content: ' \25BC';
   opacity: 1;
   color: var(--primary-dim);
-  transform: translateY(-70%) rotate(180deg);
 }
 
 .projects-table td {

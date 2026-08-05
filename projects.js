@@ -285,7 +285,7 @@ const ProjectsModule = (() => {
         });
     }
 
-    return { init, edit, remove, loadProjects, switchTab };
+    return { init, edit, remove, loadProjects, switchTab, sortBy };
 })();
 
 document.addEventListener('DOMContentLoaded', () => ProjectsModule.init());

@@ -418,17 +418,17 @@ app.get('/api/projects/:id', async (req, res) => {
 
 app.post('/api/projects', async (req, res) => {
     const { name, description, type, department, company, assignee, requester,
-            status, priority, start_date, end_date, budget, tags, url } = req.body;
+            status, priority, start_date, end_date, budget, tags, url, category } = req.body;
     try {
         const result = await pool.query(
             `INSERT INTO projects
                 (name, description, type, department, company, assignee, requester,
-                 status, priority, start_date, end_date, budget, tags, url)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                 status, priority, start_date, end_date, budget, tags, url, category)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
              RETURNING *`,
             [name, description || null, type || 'data', department || null, company || null,
              assignee || null, requester || null, status || 'planning', priority || 'medium',
-             start_date || null, end_date || null, budget || null, tags || null, url || null]
+             start_date || null, end_date || null, budget || null, tags || null, url || null, category || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -439,7 +439,7 @@ app.post('/api/projects', async (req, res) => {
 app.put('/api/projects/:id', async (req, res) => {
     const { id } = req.params;
     const { name, description, type, department, company, assignee, requester,
-            status, priority, start_date, end_date, budget, tags, url } = req.body;
+            status, priority, start_date, end_date, budget, tags, url, category } = req.body;
     try {
         const result = await pool.query(
             `UPDATE projects SET
@@ -456,10 +456,11 @@ app.put('/api/projects/:id', async (req, res) => {
                 end_date = COALESCE($11, end_date),
                 budget = COALESCE($12, budget),
                 tags = COALESCE($13, tags),
-                url = COALESCE($14, url)
-             WHERE id = $15 RETURNING *`,
+                url = COALESCE($14, url),
+                category = COALESCE($15, category)
+             WHERE id = $16 RETURNING *`,
             [name, description, type, department, company, assignee, requester,
-             status, priority, start_date, end_date, budget, tags, url, id]
+             status, priority, start_date, end_date, budget, tags, url, category, id]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: 'Projeto não encontrado' });
         res.json(result.rows[0]);

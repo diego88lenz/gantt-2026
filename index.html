@@ -314,7 +314,7 @@
                 </div>
 
                 <div class="projects-filters">
-                    <select id="projFilterType" class="select-control"><option value="">Todos os tipos</option><option value="data">Dados</option><option value="ai">IA</option><option value="geo">Geo</option><option value="analytics">Analytics</option></select>
+                    <select id="projFilterCategory" class="select-control"><option value="">Todas as categorias</option></select>
                     <select id="projFilterStatus" class="select-control"><option value="">Todos os status</option><option value="planning">Planejando</option><option value="in_progress">Em andamento</option><option value="completed">Concluído</option><option value="on_hold">Pausado</option><option value="cancelled">Cancelado</option></select>
                     <select id="projFilterPriority" class="select-control"><option value="">Todas as prioridades</option><option value="critical">Crítica</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></select>
                     <input type="search" id="projSearch" class="select-control" placeholder="Buscar projeto..." autocomplete="off">
@@ -325,7 +325,7 @@
                         <thead>
                             <tr>
                                 <th data-sort="name" class="sortable" onclick="ProjectsModule.sortBy('name')">Projeto</th>
-                                <th data-sort="type" class="sortable" onclick="ProjectsModule.sortBy('type')">Tipo</th>
+                                <th data-sort="category" class="sortable" onclick="ProjectsModule.sortBy('category')">Categoria</th>
                                 <th data-sort="department" class="sortable" onclick="ProjectsModule.sortBy('department')">Departamento</th>
                                 <th data-sort="company" class="sortable" onclick="ProjectsModule.sortBy('company')">Empresa</th>
                                 <th data-sort="assignee" class="sortable" onclick="ProjectsModule.sortBy('assignee')">Responsável</th>
@@ -380,7 +380,7 @@
 
                     <div class="form-group">
                         <label for="taskAssignee">Responsável</label>
-                        <input type="text" id="taskAssignee" placeholder="Nome do responsável" autocomplete="name">
+                        <input type="text" id="taskAssignee" placeholder="Nome do responsável" list="personList" autocomplete="name">
                     </div>
 
                     <div class="form-group">
@@ -500,13 +500,8 @@
                         <textarea id="projDescription" rows="3" placeholder="Detalhes do projeto, objetivos, escopo..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="projType">Tipo <span aria-hidden="true">*</span></label>
-                        <select id="projType" required>
-                            <option value="data">Dados</option>
-                            <option value="ai">IA</option>
-                            <option value="geo">Geoprocessamento</option>
-                            <option value="analytics">Analytics</option>
-                        </select>
+                        <label for="projCategory">Categoria</label>
+                        <select id="projCategory"></select>
                     </div>
                     <div class="form-group">
                         <label for="projPriority">Prioridade</label>

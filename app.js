@@ -1220,6 +1220,7 @@ function setupEventListeners() {
             name: task.name,
             description: `Criado a partir da tarefa do roadmap ${currentYear}`,
             type: 'data',
+            category: currentEditingCategory,
             department: currentEditingCategory,
             assignee: task.assignee || '',
             requester: '',
@@ -1293,7 +1294,7 @@ function setupEventListeners() {
                 dataMenuBtn.focus();
             }
         }
-        if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !activeModal && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !activeModal && document.activeElement && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
             e.preventDefault();
             openTaskModal();
         }
@@ -1363,7 +1364,18 @@ function openTaskModal(category = null, index = null) {
         deleteTaskBtn.style.display = 'none';
     }
 
+    loadPersonDatalist();
     openModalElement(modal, taskName);
+}
+
+// Load persons datalist for task assignee field
+async function loadPersonDatalist() {
+    try {
+        const resp = await fetch('/api/persons');
+        const persons = await resp.json();
+        const list = document.getElementById('personList');
+        if (list) list.innerHTML = persons.map(p => `<option value="${p.name}">`).join('');
+    } catch { /* offline */ }
 }
 
 // Close modal

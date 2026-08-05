@@ -12,6 +12,8 @@ const ProjectsModule = (() => {
     const STATUS_LABELS = { planning: 'Planejando', in_progress: 'Em andamento', completed: 'Concluído', on_hold: 'Pausado', cancelled: 'Cancelado' };
     const PRIORITY_LABELS = { critical: 'Crítica', high: 'Alta', medium: 'Média', low: 'Baixa' };
 
+    let roadmapCategories = [];
+
     async function loadProjects() {
         const params = new URLSearchParams();
         if (filters.type) params.set('type', filters.type);
@@ -43,17 +45,29 @@ const ProjectsModule = (() => {
 
     async function loadLookups() {
         try {
-            const [depts, comps, persons] = await Promise.all([
+            const [depts, comps, persons, cats] = await Promise.all([
                 fetch('/api/departments').then(r => r.json()).catch(() => []),
                 fetch('/api/companies').then(r => r.json()).catch(() => []),
-                fetch('/api/persons').then(r => r.json()).catch(() => [])
+                fetch('/api/persons').then(r => r.json()).catch(() => []),
+                fetch('/api/categories').then(r => r.json()).catch(() => [])
             ]);
+            roadmapCategories = cats;
             const deptList = document.getElementById('deptList');
             const companyList = document.getElementById('companyList');
             const personList = document.getElementById('personList');
+            const catSelect = document.getElementById('projCategory');
             if (deptList) deptList.innerHTML = depts.map(d => `<option value="${escapeHtml(d.name)}">`).join('');
             if (companyList) companyList.innerHTML = comps.map(c => `<option value="${escapeHtml(c.name)}">`).join('');
             if (personList) personList.innerHTML = persons.map(p => `<option value="${escapeHtml(p.name)}">`).join('');
+            if (catSelect) {
+                catSelect.innerHTML = '<option value="">Selecione...</option>' + cats.map(c => `<option value="${c.slug}" style="color:${c.color}">${c.name}</option>`).join('');
+            }
+            const filterCat = document.getElementById('projFilterCategory');
+            if (filterCat) {
+                const currentVal = filterCat.value;
+                filterCat.innerHTML = '<option value="">Todas as categorias</option>' + cats.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+                filterCat.value = currentVal;
+            }
         } catch { /* offline */ }
     }
 
@@ -94,10 +108,14 @@ const ProjectsModule = (() => {
             return;
         }
 
-        tbody.innerHTML = projects.map(p => `
+        tbody.innerHTML = projects.map(p => {
+            const cat = roadmapCategories.find(c => c.slug === p.category);
+            const catName = cat ? cat.name : (p.category || '—');
+            const catColor = cat ? cat.color : '#888';
+            return `
             <tr>
                 <td><button class="proj-name-btn" onclick="ProjectsModule.edit(${p.id})" title="${escapeHtml(p.description || '')}">${escapeHtml(p.name)}</button></td>
-                <td><span class="proj-type-badge ${p.type}">${TYPE_LABELS[p.type] || p.type}</span></td>
+                <td><span class="proj-type-badge" style="background:${catColor}22; color:${catColor}; border:1px solid ${catColor}44;">${escapeHtml(catName)}</span></td>
                 <td>${escapeHtml(p.department || '—')}</td>
                 <td>${escapeHtml(p.company || '—')}</td>
                 <td>${escapeHtml(p.assignee || '—')}</td>
@@ -108,7 +126,8 @@ const ProjectsModule = (() => {
                 <td>${p.start_date ? new Date(p.start_date).toLocaleDateString('pt-BR') : '—'}</td>
                 <td><button class="proj-action-btn" onclick="ProjectsModule.remove(${p.id})" title="Excluir"><i data-lucide="trash-2" aria-hidden="true"></i></button></td>
             </tr>
-        `).join('');
+            `;
+        }).join('');
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
     }
@@ -128,7 +147,7 @@ const ProjectsModule = (() => {
             title.textContent = 'Editar Projeto';
             document.getElementById('projName').value = project.name || '';
             document.getElementById('projDescription').value = project.description || '';
-            document.getElementById('projType').value = project.type || 'data';
+            document.getElementById('projCategory').value = project.category || '';
             document.getElementById('projPriority').value = project.priority || 'medium';
             document.getElementById('projDepartment').value = project.department || '';
             document.getElementById('projCompany').value = project.company || '';
@@ -173,7 +192,8 @@ const ProjectsModule = (() => {
         const data = {
             name: document.getElementById('projName').value,
             description: document.getElementById('projDescription').value,
-            type: document.getElementById('projType').value,
+            category: document.getElementById('projCategory').value,
+            type: 'data',
             priority: document.getElementById('projPriority').value,
             department: document.getElementById('projDepartment').value,
             company: document.getElementById('projCompany').value,
@@ -246,6 +266,7 @@ const ProjectsModule = (() => {
             tabGantt.setAttribute('aria-selected', 'false');
             tabProjects.classList.add('active');
             tabProjects.setAttribute('aria-selected', 'true');
+            loadLookups();
             loadProjects();
         } else {
             ganttPanel.hidden = false;
@@ -273,7 +294,7 @@ const ProjectsModule = (() => {
             if (e.target === e.currentTarget) closeModal();
         });
 
-        document.getElementById('projFilterType').addEventListener('change', (e) => { filters.type = e.target.value; loadProjects(); });
+        document.getElementById('projFilterCategory').addEventListener('change', (e) => { filters.type = e.target.value; loadProjects(); });
         document.getElementById('projFilterStatus').addEventListener('change', (e) => { filters.status = e.target.value; loadProjects(); });
         document.getElementById('projFilterPriority').addEventListener('change', (e) => { filters.priority = e.target.value; loadProjects(); });
         document.getElementById('projSearch').addEventListener('input', (e) => { filters.search = e.target.value; loadProjects(); });

@@ -40,11 +40,17 @@ const ProjectsModule = (() => {
         try {
             const resp = await fetch('/api/projects/stats');
             const s = await resp.json();
+            // Dashboard cards
             document.getElementById('pStatTotal').textContent = s.total || 0;
             document.getElementById('pStatProgress').textContent = s.in_progress || 0;
             document.getElementById('pStatCompleted').textContent = s.completed || 0;
             document.getElementById('pStatPlanning').textContent = s.planning || 0;
-            document.getElementById('pStatAI').textContent = s.ai || 0;
+            document.getElementById('pStatOnHold').textContent = s.on_hold || 0;
+            document.getElementById('pStatCritical').textContent = s.critical || 0;
+            // Hero cards
+            document.getElementById('headerProjectCount').textContent = s.total || 0;
+            document.getElementById('headerProjectCompleted').textContent = s.completed || 0;
+            document.getElementById('headerProjectProgress').textContent = s.in_progress || 0;
         } catch { /* offline */ }
     }
 
@@ -285,6 +291,14 @@ const ProjectsModule = (() => {
         }
     }
 
+    function setDashboardVisibility(show) {
+        const dashboard = document.getElementById('projDashboard');
+        const btn = document.getElementById('projStatsBtn');
+        dashboard.style.display = show ? 'block' : 'none';
+        btn.setAttribute('aria-expanded', String(show));
+        btn.setAttribute('aria-label', show ? 'Ocultar indicadores' : 'Exibir indicadores');
+    }
+
     function init() {
         document.getElementById('tabGantt').addEventListener('click', () => switchTab('gantt'));
         document.getElementById('tabProjects').addEventListener('click', () => switchTab('projects'));
@@ -301,6 +315,129 @@ const ProjectsModule = (() => {
             if (e.target === e.currentTarget) closeModal();
         });
 
+        // Dashboard toggle
+        document.getElementById('projStatsBtn').addEventListener('click', () => {
+            setDashboardVisibility(document.getElementById('projDashboard').style.display === 'none');
+        });
+
+        // Actions dropdown
+        const projMenuBtn = document.getElementById('projMenuBtn');
+        const projMenu = document.getElementById('projMenu');
+        projMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = projMenu.classList.toggle('open');
+            projMenuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            if (isOpen) requestAnimationFrame(() => projMenu.querySelector('[role="menuitem"]')?.focus());
+        });
+        document.addEventListener('click', () => {
+            projMenu.classList.remove('open');
+            projMenuBtn.setAttribute('aria-expanded', 'false');
+        });
+        projMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (e.target.closest('.dropdown-item')) {
+                projMenu.classList.remove('open');
+                projMenuBtn.setAttribute('aria-expanded', 'false');
+                projMenuBtn.focus();
+            }
+        });
+        projMenu.addEventListener('keydown', (e) => {
+            const items = [...projMenu.querySelectorAll('[role="menuitem"]')];
+            const currentIndex = items.indexOf(document.activeElement);
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const direction = e.key === 'ArrowDown' ? 1 : -1;
+                const nextIndex = (currentIndex + direction + items.length) % items.length;
+                items[nextIndex].focus();
+            } else if (e.key === 'Home' || e.key === 'End') {
+                e.preventDefault();
+                items[e.key === 'Home' ? 0 : items.length - 1].focus();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                projMenu.classList.remove('open');
+                projMenuBtn.setAttribute('aria-expanded', 'false');
+                projMenuBtn.focus();
+            }
+        });
+
+        // Export CSV
+        document.getElementById('projExportCsvBtn').addEventListener('click', () => {
+            if (projects.length === 0) { toast('Nenhum projeto para exportar', 'info'); return; }
+            const headers = ['Nome', 'Descrição', 'Categoria', 'Departamento', 'Empresa', 'Responsável', 'Solicitante', 'Status', 'Prioridade', 'Início', 'Fim'];
+            const rows = projects.map(p => [
+                p.name, p.description || '', p.category || '', p.department || '', p.company || '',
+                p.assignee || '', p.requester || '', p.status, p.priority,
+                p.start_date || '', p.end_date || ''
+            ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'projetos.csv';
+            link.click();
+            URL.revokeObjectURL(link.href);
+            toast('Projetos exportados para CSV', 'success');
+        });
+
+        // Import CSV
+        document.getElementById('projImportCsvBtn').addEventListener('click', () => {
+            document.getElementById('projImportFile').click();
+        });
+        document.getElementById('projImportFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const lines = ev.target.result.split('\n').filter(l => l.trim());
+                const headers = lines[0].replace(/"/g, '').split(',').map(h => h.trim().toLowerCase());
+                const nameIdx = headers.indexOf('nome');
+                if (nameIdx < 0) { toast('CSV precisa ter coluna "Nome"', 'error'); return; }
+                let imported = 0;
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                    const vals = cols.map(c => c.replace(/^"|"$/g, '').trim());
+                    const name = vals[nameIdx];
+                    if (!name) continue;
+                    const deptIdx = headers.indexOf('departamento');
+                    const compIdx = headers.indexOf('empresa');
+                    const body = { name };
+                    if (headers.indexOf('categoria') >= 0) body.category = vals[headers.indexOf('categoria')];
+                    if (deptIdx >= 0) body.department = vals[deptIdx];
+                    if (compIdx >= 0) body.company = vals[compIdx];
+                    if (headers.indexOf('responsável') >= 0 || headers.indexOf('responsavel') >= 0) {
+                        body.assignee = vals[headers.indexOf('responsável') >= 0 ? headers.indexOf('responsável') : headers.indexOf('responsavel')];
+                    }
+                    if (headers.indexOf('solicitante') >= 0) body.requester = vals[headers.indexOf('solicitante')];
+                    if (headers.indexOf('status') >= 0) body.status = vals[headers.indexOf('status')];
+                    if (headers.indexOf('prioridade') >= 0) body.priority = vals[headers.indexOf('prioridade')];
+                    if (headers.indexOf('início') >= 0 || headers.indexOf('inicio') >= 0) {
+                        body.start_date = vals[headers.indexOf('início') >= 0 ? headers.indexOf('início') : headers.indexOf('inicio')];
+                    }
+
+                    try {
+                        const resp = await fetch('/api/projects', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+                        });
+                        if (resp.ok) imported++;
+                    } catch { /* skip */ }
+                }
+                toast(`${imported} projetos importados`, 'success');
+                loadProjects();
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        });
+
+        // Share
+        document.getElementById('projShareBtn').addEventListener('click', () => {
+            navigator.clipboard.writeText(window.location.origin + window.location.pathname).then(() => {
+                toast('Link copiado!', 'success');
+            }).catch(() => {
+                prompt('Copie o link:', window.location.origin + window.location.pathname);
+            });
+        });
+
+        // Filters
         document.getElementById('projFilterCategory').addEventListener('change', (e) => { filters.type = e.target.value; loadProjects(); });
         document.getElementById('projFilterStatus').addEventListener('change', (e) => { filters.status = e.target.value; loadProjects(); });
         document.getElementById('projFilterPriority').addEventListener('change', (e) => { filters.priority = e.target.value; loadProjects(); });

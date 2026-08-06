@@ -396,7 +396,8 @@ app.get('/api/projects/stats', async (_req, res) => {
                 COUNT(*) FILTER (WHERE type = 'data') AS data,
                 COUNT(*) FILTER (WHERE type = 'ai') AS ai,
                 COUNT(*) FILTER (WHERE type = 'geo') AS geo,
-                COUNT(*) FILTER (WHERE type = 'analytics') AS analytics
+                COUNT(*) FILTER (WHERE type = 'analytics') AS analytics,
+                COUNT(*) FILTER (WHERE priority = 'critical') AS critical
             FROM projects
         `);
         res.json(result.rows[0]);

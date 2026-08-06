@@ -1294,7 +1294,7 @@ function setupEventListeners() {
                 dataMenuBtn.focus();
             }
         }
-        if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !activeModal && document.activeElement && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        if (typeof e.key === 'string' && e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !activeModal && document.activeElement && !['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
             e.preventDefault();
             openTaskModal();
         }

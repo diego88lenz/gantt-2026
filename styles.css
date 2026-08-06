@@ -240,45 +240,7 @@ svg {
   border-bottom-color: var(--primary);
 }
 
-/* Projects Section */
-.projects-section {
-  padding: 2rem 0;
-}
-
-.projects-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.projects-header h2 {
-  margin-top: 0.3rem;
-  color: var(--on-surface);
-  font-size: 1.35rem;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-}
-
-.projects-stats {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-}
-
-.projects-filters {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.projects-filters .select-control {
-  min-width: 9rem;
-  flex: 1;
-}
+/* Projects Section — usa componentes compartilhados (.control-panel, .workspace, .hero, .insight-card etc.) */
 
 .projects-table-wrap {
   border: 1px solid var(--outline-soft);

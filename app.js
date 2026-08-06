@@ -356,7 +356,7 @@ async function loadFromAPI() {
         if (data.categories) {
             categories.length = 0;
             categories.push(...data.categories.map(c => ({
-                id: c.slug, name: c.name, color: c.color
+                id: c.slug, name: c.name, color: c.color, dbId: c.id
             })));
         }
         Object.keys(ganttData).forEach(k => delete ganttData[k]);

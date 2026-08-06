@@ -5,7 +5,7 @@
 const ProjectsModule = (() => {
     let projects = [];
     let editingId = null;
-    let filters = { type: '', status: '', priority: '', search: '' };
+    let filters = { category: '', status: '', priority: '', search: '' };
     let sortState = { key: null, asc: true };
 
     const TYPE_LABELS = { data: 'Dados', ai: 'IA', geo: 'Geo', analytics: 'Analytics' };
@@ -16,7 +16,7 @@ const ProjectsModule = (() => {
 
     async function loadProjects() {
         const params = new URLSearchParams();
-        if (filters.type) params.set('type', filters.type);
+        if (filters.category) params.set('category', filters.category);
         if (filters.status) params.set('status', filters.status);
         if (filters.priority) params.set('priority', filters.priority);
         if (filters.search) params.set('search', filters.search);
@@ -438,7 +438,7 @@ const ProjectsModule = (() => {
         });
 
         // Filters
-        document.getElementById('projFilterCategory').addEventListener('change', (e) => { filters.type = e.target.value; loadProjects(); });
+        document.getElementById('projFilterCategory').addEventListener('change', (e) => { filters.category = e.target.value; loadProjects(); });
         document.getElementById('projFilterStatus').addEventListener('change', (e) => { filters.status = e.target.value; loadProjects(); });
         document.getElementById('projFilterPriority').addEventListener('change', (e) => { filters.priority = e.target.value; loadProjects(); });
         document.getElementById('projSearch').addEventListener('input', (e) => { filters.search = e.target.value; loadProjects(); });

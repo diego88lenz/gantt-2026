@@ -358,12 +358,13 @@ app.post('/api/migrate', async (req, res) => {
 // Projects — CRUD
 // =============================================================================
 app.get('/api/projects', async (req, res) => {
-    const { type, department, company, status, priority, assignee, search } = req.query;
+    const { type, category, department, company, status, priority, assignee, search } = req.query;
     const conditions = [];
     const params = [];
     let idx = 1;
 
     if (type) { conditions.push(`type = $${idx++}`); params.push(type); }
+    if (category) { conditions.push(`category = $${idx++}`); params.push(category); }
     if (department) { conditions.push(`department = $${idx++}`); params.push(department); }
     if (company) { conditions.push(`company = $${idx++}`); params.push(company); }
     if (status) { conditions.push(`status = $${idx++}`); params.push(status); }

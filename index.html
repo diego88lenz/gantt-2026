@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=20260804-logo2">
+    <link rel="stylesheet" href="styles.css?v=20261007-docs">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
@@ -421,7 +421,12 @@
                         <span class="section-kicker">Indicadores</span>
                         <h2 id="projDashboardTitle">Métricas dos projetos</h2>
                     </div>
-                    <span class="live-badge"><span class="pulse-indicator" aria-hidden="true"></span> Atualizado</span>
+                    <div class="heading-badges">
+                        <span class="filter-badge" id="projFilteredBadge" hidden>
+                            <i data-lucide="filter" aria-hidden="true"></i> Filtrado
+                        </span>
+                        <span class="live-badge"><span class="pulse-indicator" aria-hidden="true"></span> Atualizado</span>
+                    </div>
                 </div>
                 <div class="dashboard-grid" id="projStats">
                     <article class="dash-card"><span class="dash-icon"><i data-lucide="folder" aria-hidden="true"></i></span><span class="dash-value" id="pStatTotal">0</span><span class="dash-label">Total</span></article>
@@ -446,6 +451,7 @@
                         <thead>
                             <tr>
                                 <th data-sort="name" class="sortable" onclick="ProjectsModule.sortBy('name')">Projeto</th>
+                                <th>Repo</th>
                                 <th data-sort="category" class="sortable" onclick="ProjectsModule.sortBy('category')">Categoria</th>
                                 <th data-sort="department" class="sortable" onclick="ProjectsModule.sortBy('department')">Departamento</th>
                                 <th data-sort="company" class="sortable" onclick="ProjectsModule.sortBy('company')">Empresa</th>
@@ -455,6 +461,7 @@
                                 <th data-sort="status" class="sortable" onclick="ProjectsModule.sortBy('status')">Status</th>
                                 <th data-sort="priority" class="sortable" onclick="ProjectsModule.sortBy('priority')">Prioridade</th>
                                 <th data-sort="start_date" class="sortable" onclick="ProjectsModule.sortBy('start_date')">Início</th>
+                                <th>Docs</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -610,7 +617,22 @@
                     <i data-lucide="x" aria-hidden="true"></i>
                 </button>
             </div>
+
+            <div class="modal-tabs" role="tablist" aria-label="Seções do projeto">
+                <button type="button" class="modal-tab active" id="projTabDadosBtn" role="tab"
+                    aria-selected="true" aria-controls="projTabDados"
+                    onclick="ProjectsModule.switchModalTab('dados')">
+                    <i data-lucide="clipboard-list" aria-hidden="true"></i> Dados
+                </button>
+                <button type="button" class="modal-tab" id="projTabDocumentosBtn" role="tab"
+                    aria-selected="false" aria-controls="projTabDocumentos"
+                    onclick="ProjectsModule.switchModalTab('documentos')">
+                    <i data-lucide="file-text" aria-hidden="true"></i> Documentos
+                </button>
+            </div>
+
             <form id="projectForm">
+              <div id="projTabDados" role="tabpanel" aria-labelledby="projTabDadosBtn">
                 <div class="form-grid">
                     <div class="form-group form-group-full">
                         <label for="projName">Nome do projeto <span aria-hidden="true">*</span></label>
@@ -679,8 +701,24 @@
                         <input type="url" id="projUrl" placeholder="https://...">
                     </div>
                     <div class="form-group">
+                        <label for="projGithub">Repositório GitHub</label>
+                        <input type="url" id="projGithub" placeholder="https://github.com/usuario/repo">
+                    </div>
+                    <div class="form-group">
                         <label for="projTags">Tags</label>
                         <input type="text" id="projTags" placeholder="urgente, Q1, LGPD (separadas por vírgula)">
+                    </div>
+                    <div class="form-group form-group-full">
+                        <label for="projFiles">Arquivos do projeto</label>
+                        <div class="file-drop" id="projFileDrop" role="button" tabindex="0" aria-label="Selecionar arquivos do projeto">
+                            <input type="file" id="projFiles" multiple hidden>
+                            <div class="file-drop-hint">
+                                <i data-lucide="upload-cloud" aria-hidden="true"></i>
+                                <span><strong>Clique para selecionar</strong> ou arraste arquivos aqui</span>
+                                <small>PDF, planilhas, imagens... até 25 MB por arquivo (máx. 10)</small>
+                            </div>
+                        </div>
+                        <ul class="file-list" id="projFileList"></ul>
                     </div>
                     <div class="form-group form-group-full" id="projDatesInfo" style="display:none;">
                         <div class="proj-meta-grid">
@@ -698,14 +736,116 @@
                         <button type="submit" class="btn btn-primary"><i data-lucide="check" aria-hidden="true"></i> Salvar</button>
                     </div>
                 </div>
+              </div>
             </form>
+
+            <!-- Aba Documentos: fora do <form> para não disparar o submit do projeto -->
+            <div id="projTabDocumentos" role="tabpanel" aria-labelledby="projTabDocumentosBtn" hidden>
+                <p class="doc-blocked" id="docBlocked" hidden></p>
+
+                <div id="docContent">
+                    <div class="doc-generate">
+                        <label class="filter-field" for="docTypeSelect">
+                            <span>Novo documento</span>
+                            <select id="docTypeSelect" class="select-control"></select>
+                        </label>
+                        <input type="text" id="docAuthorInput" class="doc-author-input" placeholder="Autor (opcional)">
+                        <button type="button" class="btn btn-primary" id="docGenerateBtn">
+                            <i data-lucide="file-plus-2" aria-hidden="true"></i> Gerar
+                        </button>
+                    </div>
+
+                    <div class="doc-list" id="docList"></div>
+                    <p class="doc-empty" id="docEmpty">
+                        Nenhum documento gerado para <strong id="docProjectName">—</strong> ainda.
+                        Escolha um tipo acima e clique em Gerar.
+                    </p>
+
+                    <div class="doc-workspace" id="docWorkspace" hidden>
+                        <div class="doc-toolbar">
+                            <input type="text" id="docTitleInput" class="doc-title-input"
+                                aria-label="Título do documento" placeholder="Título do documento">
+                            <span class="doc-badge" id="docVersionBadge">v1</span>
+                            <select id="docStatusSelect" class="select-control doc-status-select"
+                                aria-label="Situação do documento">
+                                <option value="draft">Rascunho</option>
+                                <option value="final">Final</option>
+                            </select>
+                            <span class="doc-dirty" id="docDirtyBadge" hidden>não salvo</span>
+
+                            <div class="doc-actions">
+                                <button type="button" class="btn btn-ghost" id="docHistoryBtn"
+                                    aria-expanded="false" title="Histórico de versões">
+                                    <i data-lucide="history" aria-hidden="true"></i> Versões
+                                </button>
+                                <button type="button" class="btn btn-ghost" id="docRegenerateBtn"
+                                    title="Regerar a partir do template">
+                                    <i data-lucide="refresh-cw" aria-hidden="true"></i> Regerar
+                                </button>
+                                <button type="button" class="btn btn-ghost" id="docExportMdBtn"
+                                    title="Baixar em Markdown">
+                                    <i data-lucide="file-down" aria-hidden="true"></i> .md
+                                </button>
+                                <button type="button" class="btn btn-ghost" id="docExportDocBtn"
+                                    title="Baixar para o Word">
+                                    <i data-lucide="file-type-2" aria-hidden="true"></i> Word
+                                </button>
+                                <button type="button" class="btn btn-ghost" id="docPrintBtn"
+                                    title="Imprimir ou salvar em PDF">
+                                    <i data-lucide="printer" aria-hidden="true"></i> PDF
+                                </button>
+                                <button type="button" class="btn btn-primary" id="docSaveBtn">
+                                    <i data-lucide="save" aria-hidden="true"></i> Salvar
+                                </button>
+                                <button type="button" class="proj-action-btn" id="docDeleteBtn"
+                                    title="Excluir documento">
+                                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="doc-meta" id="docMetaInfo"></p>
+
+                        <div class="doc-split">
+                            <div class="doc-pane">
+                                <label class="doc-pane-label" for="docEditor">Markdown (editável)</label>
+                                <textarea id="docEditor" class="doc-editor" spellcheck="false"></textarea>
+                            </div>
+                            <div class="doc-pane">
+                                <span class="doc-pane-label">Pré-visualização / impressão</span>
+                                <div class="doc-preview">
+                                    <article class="doc-paper" id="docPaper">
+                                        <header class="doc-paper-head">
+                                            <img class="doc-paper-logo" src="./h2o-white.png?v=20261007-docs"
+                                                alt="H2O Innovation" width="4280" height="2177">
+                                            <div class="doc-paper-head-info">
+                                                <strong id="docPaperTitle"></strong>
+                                                <small id="docPaperProject"></small>
+                                                <small id="docPaperDate"></small>
+                                            </div>
+                                        </header>
+                                        <div class="doc-paper-body" id="docPaperBody"></div>
+                                        <footer class="doc-paper-foot">
+                                            <span id="docPaperFootProject"></span>
+                                            <span>Planejamento de Dados</span>
+                                        </footer>
+                                    </article>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="doc-history" id="docHistory" hidden></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <script src="api.js?v=20260804-projects"></script>
-    <script src="projects.js?v=20260804-projects"></script>
+    <script src="markdown.js?v=20261007-docs"></script>
+    <script src="api.js?v=20261007-uploads"></script>
+    <script src="projects.js?v=20261007-docs"></script>
+    <script src="documents.js?v=20261007-docs"></script>
     <script src="app.js?v=20260804-projects"></script>
     <script>lucide.createIcons();</script>
 </body>

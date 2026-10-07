@@ -11,7 +11,7 @@
   --on-surface: #ddfcff;
   --on-surface-soft: #b4ecf8;
   --on-surface-variant: #b9cacb;
-  --text-muted: #849da1;
+  --text-muted: #a3bcc0;
   --outline: #497f8a;
   --outline-soft: rgba(73, 127, 138, 0.24);
   --outline-strong: rgba(0, 224, 254, 0.34);
@@ -57,7 +57,7 @@ body.light {
   --on-surface: #062f36;
   --on-surface-soft: #164851;
   --on-surface-variant: #3c6167;
-  --text-muted: #5c7479;
+  --text-muted: #4b6468;
   --outline: #5a7a80;
   --outline-soft: rgba(0, 73, 83, 0.15);
   --outline-strong: rgba(0, 120, 136, 0.38);
@@ -268,7 +268,7 @@ body.light .projects-table-wrap {
   height: 3rem;
   background: var(--surface-container);
   color: var(--text-muted);
-  font-size: 0.64rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -474,6 +474,116 @@ body.light .projects-table-wrap {
   border: 1px solid var(--outline-soft);
   border-radius: var(--radius);
   background: var(--surface-dim);
+}
+
+/* Upload de arquivos do projeto */
+.file-drop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6.5rem;
+  padding: 1rem;
+  border: 1.5px dashed var(--outline-soft);
+  border-radius: var(--radius);
+  background: var(--surface-dim);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.file-drop:hover,
+.file-drop:focus-visible {
+  border-color: var(--primary-dim);
+  background: var(--surface-container);
+  outline: 0;
+}
+
+.file-drop.dragover {
+  border-color: var(--primary-soft);
+  background: rgba(0, 219, 231, 0.08);
+}
+
+.file-drop-hint {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.file-drop-hint svg {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: var(--primary-dim);
+}
+
+.file-drop-hint strong {
+  color: var(--primary-soft);
+}
+
+.file-drop-hint small {
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+.file-list {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--outline-soft);
+  border-radius: var(--radius);
+  background: var(--surface-dim);
+}
+
+.file-item > svg {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--primary-dim);
+}
+
+.file-item-pending {
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.file-item-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.file-item-name {
+  font-size: 0.8rem;
+  color: var(--on-surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-item-info small {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.file-item .file-download {
+  text-decoration: none;
+  display: inline-flex;
+}
+
+.file-item .file-download:hover {
+  color: var(--primary-soft);
 }
 
 .empty-projects {
@@ -765,6 +875,16 @@ h1 span {
   -webkit-backdrop-filter: blur(18px);
 }
 
+/* A área de controles/filtros usa uma superfície mais elevada, para que TANTO a barra
+   superior (busca/botões) QUANTO a faixa de filtros tenham o mesmo fundo legível. */
+.control-panel {
+  background: rgba(0, 43, 50, 0.9);
+}
+
+body.light .control-panel {
+  background: rgba(255, 255, 255, 0.94);
+}
+
 body.light .control-panel,
 body.light .dashboard,
 body.light .workspace,
@@ -792,11 +912,16 @@ body.light .insight-card {
 .toolbar-secondary {
   justify-content: space-between;
   border-top: 1px solid var(--outline-soft);
-  background: rgba(0, 17, 20, 0.26);
+  /* Acentuação sutil sobre a superfície do painel — evita criar uma área escura
+     onde os controles ficariam dificeis de ler */
+  background: linear-gradient(180deg, rgba(0, 241, 254, 0.05), rgba(0, 241, 254, 0.01));
+  /* Acompanha os cantos arredondados do .control-panel (que usa overflow: visible) */
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
 }
 
 body.light .toolbar-secondary {
-  background: rgba(217, 240, 243, 0.35);
+  background: linear-gradient(180deg, rgba(0, 125, 134, 0.05), rgba(0, 125, 134, 0.012));
 }
 
 .toolbar-group {
@@ -899,8 +1024,8 @@ body.light .toolbar-secondary {
   place-items: center;
   border: 1px solid currentColor;
   border-radius: 0.3rem;
-  font: 600 0.62rem/1 "Sora", sans-serif;
-  opacity: 0.58;
+  font: 600 0.68rem/1 "Sora", sans-serif;
+  opacity: 0.8;
 }
 
 .icon-btn {
@@ -933,12 +1058,21 @@ body.light .toolbar-secondary {
   align-items: center;
   gap: 0.65rem;
   margin-left: 0.5rem;
-  border: 1px solid var(--outline-soft);
+  border: 1px solid var(--outline-strong);
   border-radius: var(--radius);
-  background: var(--surface-dim);
-  color: var(--text-muted);
+  background: var(--surface-low);
+  color: var(--on-surface-variant);
   padding: 0 0.75rem;
   transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+body.light .toolbar-search {
+  background: var(--surface-highest);
+}
+
+.toolbar-search:hover {
+  border-color: var(--primary-dim);
+  background: var(--surface-container);
 }
 
 .toolbar-search:focus-within {
@@ -1068,12 +1202,12 @@ body.light .dropdown-menu {
 
 .view-context strong {
   color: var(--on-surface);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
 }
 
 .view-context small {
   color: var(--text-muted);
-  font-size: 0.65rem;
+  font-size: 0.72rem;
 }
 
 .toolbar-view {
@@ -1084,10 +1218,14 @@ body.light .dropdown-menu {
   display: flex;
   align-items: center;
   gap: 0.2rem;
-  border: 1px solid var(--outline-soft);
+  border: 1px solid var(--outline-strong);
   border-radius: var(--radius);
-  background: var(--surface-dim);
+  background: var(--surface-low);
   padding: 0.2rem;
+}
+
+body.light .segmented {
+  background: var(--surface-highest);
 }
 
 .seg-btn {
@@ -1115,15 +1253,36 @@ body.light .dropdown-menu {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  border: 1px solid var(--outline-soft);
+  border: 1px solid var(--outline-strong);
   border-radius: var(--radius);
-  background: var(--surface-dim);
+  background: var(--surface-low);
   padding: 0 0.7rem;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.filter-field:hover {
+  border-color: var(--primary-dim);
+  background: var(--surface-container);
+}
+
+.filter-field:focus-within {
+  border-color: var(--primary-dim);
+  background: var(--surface-container);
+  box-shadow: 0 0 0 3px rgba(0, 219, 231, 0.14);
+}
+
+body.light .filter-field {
+  background: var(--surface-highest);
+}
+
+body.light .filter-field:hover,
+body.light .filter-field:focus-within {
+  background: var(--surface-container);
 }
 
 .filter-field > span {
-  color: var(--text-muted);
-  font-size: 0.65rem;
+  color: var(--on-surface);
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1136,8 +1295,22 @@ body.light .dropdown-menu {
   outline: 0;
   background: transparent;
   color: var(--on-surface);
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 600;
+}
+
+/* Popup nativo da lista de opções de TODOS os <select> (filtros, escala,
+   responsável e os do modal de cadastro).
+   Sem cor de fundo explícita o navegador pinta a lista com o BRANCO padrão do
+   sistema, enquanto o texto herda a cor do tema — no escuro isso resulta em
+   ciano claro sobre branco, ilegível. Estas regras fixam fundo + texto nos
+   dois temas, seguindo o mesmo padrão do modo claro.
+   Obs.: não estilizar `option:checked` — o Chromium resolve a pseudo-classe de
+   forma não confiável em <option>, destacando opções não selecionadas. */
+select option,
+select optgroup {
+  background-color: var(--surface-container);
+  color: var(--on-surface);
 }
 
 .filter-field-wide .select-control {
@@ -1187,6 +1360,43 @@ body.light .dropdown-menu {
   letter-spacing: 0.06em;
   padding: 0.45rem 0.75rem;
   text-transform: uppercase;
+}
+
+.heading-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Indica que os indicadores estão refletindo os filtros ativos */
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius-full);
+  background: rgba(0, 241, 254, 0.1);
+  color: var(--primary-dim);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.45rem 0.75rem;
+  text-transform: uppercase;
+}
+
+.filter-badge svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* Precisa vencer a especificidade do display: inline-flex acima */
+.filter-badge[hidden] {
+  display: none;
+}
+
+body.light .filter-badge {
+  background: rgba(0, 125, 134, 0.1);
+  color: var(--primary);
 }
 
 .dashboard-grid {
@@ -1832,6 +2042,13 @@ tr.drag-over td {
   width: min(100%, 31rem);
 }
 
+/* Modal largo: usado pelo cadastro de projeto, que agora tem abas e o editor
+   de documentos lado a lado com a pré-visualização. (A classe era referenciada
+   no HTML mas nunca tinha sido definida.) */
+.modal-content-wide {
+  width: min(100%, 70rem);
+}
+
 @keyframes modal-content-in {
   from { opacity: 0; transform: translateY(1.25rem) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1866,6 +2083,44 @@ tr.drag-over td {
   margin-top: -0.25rem;
 }
 
+/* Abas dentro do modal (Dados / Documentos) */
+.modal-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--outline-soft);
+}
+
+.modal-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 650;
+  padding: 0 0.9rem;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.modal-tab svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.modal-tab:hover {
+  color: var(--on-surface);
+}
+
+.modal-tab.active {
+  color: var(--primary-dim);
+  border-bottom-color: var(--primary);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1891,6 +2146,7 @@ tr.drag-over td {
 }
 
 .form-group input[type="text"],
+.form-group input[type="url"],
 .form-group select {
   width: 100%;
   min-height: 3rem;
@@ -1909,7 +2165,13 @@ tr.drag-over td {
   opacity: 1;
 }
 
+.form-group input[type="url"]::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 .form-group input[type="text"]:focus,
+.form-group input[type="url"]:focus,
 .form-group select:focus {
   border-color: var(--primary-dim);
   background: var(--surface-container);
@@ -2101,6 +2363,586 @@ tr.drag-over td {
 
 .modal-actions-end {
   justify-content: flex-end;
+}
+
+/* =========================================================================
+   Documentos do projeto (aba "Documentos" do modal)
+   ========================================================================= */
+.btn-blocked-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  padding: 0.85rem 1rem;
+  border: 1px dashed var(--outline-strong);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  text-align: center;
+}
+
+.doc-blocked {
+  color: var(--on-surface-variant);
+  font-size: 0.85rem;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--outline-strong);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  text-align: center;
+}
+
+.doc-blocked[hidden] {
+  display: none;
+}
+
+/* Geração */
+.doc-generate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.doc-generate .filter-field {
+  flex: 1 1 20rem;
+}
+
+.doc-generate .select-control {
+  min-width: 12rem;
+  max-width: none;
+  flex: 1;
+}
+
+.doc-author-input {
+  min-height: 2.75rem;
+  flex: 1 1 12rem;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius);
+  outline: 0;
+  background: var(--surface-low);
+  color: var(--on-surface);
+  font-size: 0.8rem;
+  padding: 0 0.8rem;
+}
+
+.doc-author-input::placeholder {
+  color: var(--text-muted);
+}
+
+.doc-author-input:focus {
+  border-color: var(--primary-dim);
+  box-shadow: 0 0 0 3px rgba(0, 219, 231, 0.12);
+}
+
+/* Chips dos documentos existentes */
+.doc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.doc-list:empty {
+  display: none;
+}
+
+.doc-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  max-width: 20rem;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  color: var(--on-surface);
+  cursor: pointer;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+
+.doc-chip:hover {
+  border-color: var(--primary-dim);
+  background: var(--surface-container);
+  transform: translateY(-1px);
+}
+
+.doc-chip.active {
+  border-color: var(--primary);
+  background: rgba(0, 241, 254, 0.1);
+}
+
+body.light .doc-chip.active {
+  background: rgba(0, 125, 134, 0.1);
+}
+
+.doc-chip-name {
+  font-size: 0.78rem;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 18rem;
+}
+
+.doc-chip-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.doc-chip-ver {
+  color: var(--primary-dim);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.doc-chip-status {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-full);
+}
+
+.doc-chip-status.draft {
+  border: 1px solid var(--outline-strong);
+  color: var(--text-muted);
+}
+
+.doc-chip-status.final {
+  border: 1px solid rgba(99, 245, 197, 0.5);
+  background: rgba(99, 245, 197, 0.12);
+  color: var(--success);
+}
+
+.doc-empty {
+  border: 1px dashed var(--outline-strong);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 1.5rem 1rem;
+  text-align: center;
+}
+
+.doc-empty[hidden] {
+  display: none;
+}
+
+/* Área de trabalho do documento */
+.doc-workspace[hidden] {
+  display: none;
+}
+
+.doc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: 1px solid var(--outline-soft);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+}
+
+.doc-title-input {
+  min-height: 2.6rem;
+  flex: 1 1 18rem;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  outline: 0;
+  background: var(--surface-dim);
+  color: var(--on-surface);
+  font-size: 0.9rem;
+  font-weight: 650;
+  padding: 0 0.7rem;
+}
+
+.doc-title-input:focus {
+  border-color: var(--primary-dim);
+  background: var(--surface-container);
+}
+
+.doc-badge {
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius-full);
+  background: rgba(0, 241, 254, 0.1);
+  color: var(--primary-dim);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.28rem 0.6rem;
+}
+
+.doc-status-select {
+  min-width: 7.5rem;
+  max-width: 9rem;
+  min-height: 2.6rem;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius);
+  background: var(--surface-dim);
+  padding: 0 0.5rem;
+}
+
+.doc-dirty {
+  color: var(--warning);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.doc-dirty[hidden] {
+  display: none;
+}
+
+.doc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.doc-actions .btn {
+  min-height: 2.6rem;
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+}
+
+.doc-meta {
+  margin: 0.5rem 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+/* Editor + pré-visualização */
+.doc-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 30rem;
+}
+
+.doc-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.doc-pane-label {
+  color: var(--on-surface-variant);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.doc-editor {
+  flex: 1;
+  min-height: 22rem;
+  width: 100%;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius);
+  outline: 0;
+  background: var(--surface-dim);
+  color: var(--on-surface);
+  font: 0.78rem/1.6 "Consolas", "Courier New", monospace;
+  padding: 0.85rem;
+  resize: vertical;
+}
+
+.doc-editor:focus {
+  border-color: var(--primary-dim);
+  box-shadow: 0 0 0 3px rgba(0, 219, 231, 0.12);
+}
+
+.doc-preview {
+  flex: 1;
+  min-height: 22rem;
+  overflow: auto;
+  border: 1px solid var(--outline-soft);
+  border-radius: var(--radius);
+  background: var(--surface-dim);
+  padding: 1rem;
+}
+
+/* A folha é SEMPRE branca com texto escuro, independente do tema do app:
+   é o que será impresso/exportado, então precisa refletir o papel. */
+.doc-paper {
+  width: 100%;
+  max-width: 46rem;
+  margin: 0 auto;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 2px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  padding: 1.75rem;
+}
+
+.doc-paper-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 2px solid #00b8c4;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.doc-paper-logo {
+  width: 8rem;
+  height: auto;
+  flex: 0 0 auto;
+}
+
+.doc-paper-head-info {
+  display: grid;
+  gap: 0.1rem;
+  margin-left: auto;
+  text-align: right;
+  color: #14555f;
+}
+
+.doc-paper-head-info strong {
+  font-size: 0.85rem;
+}
+
+.doc-paper-head-info small {
+  color: #5c7479;
+  font-size: 0.68rem;
+}
+
+.doc-paper-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.75rem;
+  border-top: 1px solid #cfe3e5;
+  padding-top: 0.5rem;
+  color: #5c7479;
+  font-size: 0.65rem;
+}
+
+/* Tipografia do documento */
+.doc-paper-body h1 {
+  color: #0b3c46;
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.75rem;
+}
+
+.doc-paper-body h2 {
+  color: #0b3c46;
+  font-size: 1rem;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.doc-paper-body h3 {
+  color: #14555f;
+  font-size: 0.88rem;
+  margin: 1.1rem 0 0.4rem;
+}
+
+.doc-paper-body p {
+  margin: 0 0 0.7rem;
+}
+
+.doc-paper-body strong {
+  color: #0b3c46;
+}
+
+.doc-paper-body ul,
+.doc-paper-body ol {
+  margin: 0 0 0.7rem;
+  padding-left: 1.35rem;
+}
+
+.doc-paper-body li {
+  margin-bottom: 0.2rem;
+}
+
+.doc-paper-body ul.task-list {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+
+.doc-paper-body ul.task-list li {
+  color: #14555f;
+}
+
+.doc-paper-body hr {
+  border: 0;
+  border-top: 1px solid #cfe3e5;
+  margin: 1.25rem 0;
+}
+
+.doc-paper-body code {
+  background: #f1f5f6;
+  color: #0b3c46;
+  font-family: "Consolas", monospace;
+  font-size: 0.75rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+}
+
+.doc-paper-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0 1rem;
+}
+
+.doc-paper-body th,
+.doc-paper-body td {
+  border: 1px solid #b9cacb;
+  font-size: 0.72rem;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.doc-paper-body th {
+  background: #e6f7f9;
+  color: #0b3c46;
+  font-weight: 700;
+}
+
+.doc-paper-body td {
+  color: #2a3d40;
+}
+
+/* Histórico de versões */
+.doc-history {
+  margin-top: 1rem;
+  border: 1px solid var(--outline-soft);
+  border-radius: var(--radius);
+  background: var(--surface-low);
+  padding: 0.5rem;
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.doc-history[hidden] {
+  display: none;
+}
+
+.doc-history-empty {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.doc-version-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  border-bottom: 1px solid var(--outline-soft);
+  padding: 0.5rem 0.6rem;
+}
+
+.doc-version-row:last-child {
+  border-bottom: 0;
+}
+
+.doc-version-row.current {
+  background: rgba(0, 241, 254, 0.07);
+  border-radius: var(--radius);
+}
+
+.doc-version-num {
+  flex: 0 0 auto;
+  min-width: 2.2rem;
+  color: var(--primary-dim);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.doc-version-info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.doc-version-info strong {
+  color: var(--on-surface);
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-version-info small {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+}
+
+.doc-version-current {
+  color: var(--success);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.doc-version-restore {
+  min-height: 2rem;
+  font-size: 0.7rem;
+  padding: 0 0.6rem;
+}
+
+/* Botão da coluna "Docs" na listagem de projetos */
+.proj-doc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--outline-strong);
+  border-radius: var(--radius-full);
+  background: rgba(0, 241, 254, 0.08);
+  color: var(--primary-dim);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.22rem 0.55rem;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.proj-doc-btn svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.proj-doc-btn:hover {
+  border-color: var(--primary);
+  background: rgba(0, 241, 254, 0.16);
+}
+
+body.light .proj-doc-btn {
+  background: rgba(0, 125, 134, 0.09);
+}
+
+body.light .proj-doc-btn:hover {
+  background: rgba(0, 125, 134, 0.16);
+}
+
+/* Empilhamento em telas estreitas */
+@media (max-width: 900px) {
+  .doc-split {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .doc-actions {
+    margin-left: 0;
+  }
 }
 
 /* Toasts */
@@ -2487,5 +3329,69 @@ body.light .toast {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================================================
+   Impressão de documento (botão "PDF")
+   Isola a folha .doc-paper na página — o resto da interface não é impresso.
+   Fica no fim do arquivo para vencer os demais blocos.
+   ========================================================================= */
+@page {
+  size: A4;
+  margin: 1.6cm;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  /* Esconde tudo e revela apenas a folha do documento */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .doc-paper,
+  .doc-paper * {
+    visibility: visible !important;
+  }
+
+  .doc-paper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: #ffffff;
+    color: #1a1a1a;
+    font-size: 10.5pt;
+  }
+
+  /* Evita quebra no meio de linhas de tabela e títulos órfãos */
+  .doc-paper-body tr,
+  .doc-paper-body li {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .doc-paper-body h1,
+  .doc-paper-body h2,
+  .doc-paper-body h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .doc-paper-body table {
+    page-break-inside: auto;
+  }
+
+  .doc-paper-body thead {
+    display: table-header-group;
   }
 }

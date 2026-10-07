@@ -4,3 +4,6 @@ npm-debug.log
 .gitignore
 *.md
 DESIGN*.md
+uploads
+server/uploads
+server/test-*.js

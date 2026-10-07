@@ -23,3 +23,8 @@ server/node_modules/
 
 # Docker volumes
 pgdata/
+
+# Uploads de arquivos dos projetos
+uploads/*
+!uploads/.gitkeep
+server/uploads/

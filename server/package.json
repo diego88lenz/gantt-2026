@@ -7,11 +7,13 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "migrate": "node migrate.js",
-    "init-db": "node init-db.js"
+    "init-db": "node init-db.js",
+    "test": "node test-templates.js && node test-markdown.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "multer": "^2.0.1",
     "pg": "^8.12.0"
   },
   "devDependencies": {

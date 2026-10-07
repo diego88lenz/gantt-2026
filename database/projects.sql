@@ -19,9 +19,26 @@ CREATE TABLE IF NOT EXISTS projects (
     budget          DECIMAL(12,2),
     tags            VARCHAR(300),
     url             VARCHAR(1000),
+    github_repo     VARCHAR(1000),
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Garante a coluna em bancos criados antes desta alteração
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS github_repo VARCHAR(1000);
+
+-- Arquivos anexados a um projeto (ver database/project_files.sql)
+CREATE TABLE IF NOT EXISTS project_files (
+    id             SERIAL PRIMARY KEY,
+    project_id     INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    filename       VARCHAR(500) NOT NULL,
+    original_name  VARCHAR(500) NOT NULL,
+    mime_type      VARCHAR(200),
+    size_bytes     BIGINT NOT NULL DEFAULT 0,
+    uploaded_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_files_project ON project_files(project_id);
 
 CREATE INDEX IF NOT EXISTS idx_projects_type        ON projects(type);
 CREATE INDEX IF NOT EXISTS idx_projects_department  ON projects(department);
